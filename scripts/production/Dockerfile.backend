@@ -1,0 +1,48 @@
+# Production Dockerfile for SPARC Backend
+FROM node:18-alpine AS base
+
+# Install security updates and dependencies
+RUN apk add --no-cache \
+    dumb-init \
+    curl \
+    && apk upgrade
+
+# Create app directory and user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S sparc -u 1001 -G nodejs
+
+WORKDIR /app
+RUN chown -R sparc:nodejs /app
+
+# Install dependencies
+FROM base AS deps
+COPY package*.json ./
+RUN npm ci --only=production --ignore-scripts && npm cache clean --force
+
+# Build stage
+FROM base AS build
+COPY package*.json ./
+RUN npm ci --ignore-scripts
+COPY src/backend ./src/backend
+
+# Production stage
+FROM base AS production
+
+# Copy dependencies and source code
+COPY --from=deps --chown=sparc:nodejs /app/node_modules ./node_modules
+COPY --from=build --chown=sparc:nodejs /app/src/backend ./src/backend
+COPY --chown=sparc:nodejs package*.json ./
+
+# Switch to non-root user
+USER sparc
+
+# Expose port
+EXPOSE 5000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:5000/api/health || exit 1
+
+# Use dumb-init to handle signals properly
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["node", "src/backend/api/index.js"]

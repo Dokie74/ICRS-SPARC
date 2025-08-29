@@ -1,0 +1,34 @@
+FROM node:18-alpine
+
+# Install development dependencies
+RUN apk add --no-cache curl
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies with dev dependencies for hot reloading
+RUN npm ci --include=dev
+
+# Copy source code
+COPY src/backend ./src/backend
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S sparc -u 1001 -G nodejs
+
+# Change ownership of the app directory
+RUN chown -R sparc:nodejs /app
+USER sparc
+
+# Expose port
+EXPOSE 5000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:5000/api/health || exit 1
+
+# Start the application with nodemon for hot reloading
+CMD ["npm", "run", "dev"]
