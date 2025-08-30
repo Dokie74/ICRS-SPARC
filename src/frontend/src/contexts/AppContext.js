@@ -2,7 +2,7 @@
 // Application context for ICRS SPARC frontend
 // Manages global app state, notifications, and shared data
 
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import apiClient from '../services/api-client';
 import toast from 'react-hot-toast';
 
@@ -224,7 +224,7 @@ export const AppProvider = ({ children }) => {
   }, [state.sidebarCollapsed]);
 
   // Initialize app
-  const initializeApp = async () => {
+  const initializeApp = useCallback(async () => {
     try {
       // Load reference data in parallel
       await Promise.all([
@@ -236,7 +236,7 @@ export const AppProvider = ({ children }) => {
     } catch (error) {
       console.error('App initialization error:', error);
     }
-  };
+  }, []); // Empty dependency array since these functions don't depend on external values
 
   // Load customers
   const loadCustomers = async () => {

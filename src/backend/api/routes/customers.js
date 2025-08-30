@@ -5,6 +5,7 @@ const express = require('express');
 const { asyncHandler } = require('../middleware/error-handler');
 const { requireStaff, requireManager } = require('../middleware/auth');
 const supabaseClient = require('../../db/supabase-client');
+const { isDemoToken, getMockCustomers, getMockCustomerById } = require('../../utils/mock-data');
 
 const router = express.Router();
 
@@ -22,6 +23,49 @@ router.get('/', asyncHandler(async (req, res) => {
     orderBy = 'name',
     ascending = 'true'
   } = req.query;
+
+  // Use mock data for demo tokens
+  if (isDemoToken(req.accessToken)) {
+    const options = {
+      orderBy: {
+        column: orderBy,
+        ascending: ascending === 'true'
+      },
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    };
+
+    // Add filters
+    const filters = [];
+    if (country) filters.push({ column: 'country', value: country });
+    if (active_only === 'true') filters.push({ column: 'active', value: true });
+
+    // Handle search functionality
+    if (search) {
+      filters.push({ 
+        column: 'name', 
+        value: `%${search}%`, 
+        operator: 'ilike' 
+      });
+    }
+
+    if (filters.length > 0) {
+      options.filters = filters;
+    }
+
+    const result = getMockCustomers(options);
+
+    return res.json({
+      success: true,
+      data: result.data,
+      count: result.count,
+      pagination: {
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        total: result.count
+      }
+    });
+  }
 
   try {
     const options = {

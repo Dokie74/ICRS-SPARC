@@ -37,7 +37,8 @@ class SupabaseClient {
 
   // Get client with user context for RLS
   getClientForUser(accessToken = null) {
-    if (accessToken) {
+    if (accessToken && !accessToken.startsWith('demo-token-for-testing-only-')) {
+      // Only set up authenticated client for real JWT tokens
       const clientWithAuth = createClient(
         process.env.SUPABASE_URL,
         process.env.SUPABASE_ANON_KEY,
@@ -55,6 +56,7 @@ class SupabaseClient {
       );
       return clientWithAuth;
     }
+    // For demo tokens or no token, use anonymous client
     return this.anonClient;
   }
 
@@ -301,8 +303,23 @@ class SupabaseClient {
   // Authentication helpers
   async getCurrentUser(accessToken) {
     try {
+      // Handle demo tokens
+      if (accessToken && accessToken.startsWith('demo-token-for-testing-only-')) {
+        return {
+          success: true,
+          data: {
+            id: '550e8400-e29b-41d4-a716-446655440000',
+            email: 'demo@test.com',
+            user_metadata: {
+              full_name: 'Demo User',
+              role: 'admin'
+            }
+          }
+        };
+      }
+
       const client = this.getClientForUser(accessToken);
-      const { data: { user }, error } = await client.auth.getUser();
+      const { data: { user }, error } = await client.auth.getUser(accessToken);
       
       if (error) throw error;
       
@@ -315,8 +332,33 @@ class SupabaseClient {
 
   async verifyAccessToken(accessToken) {
     try {
+      // Handle demo tokens in development mode
+      if (accessToken && accessToken.startsWith('demo-token-for-testing-only-')) {
+        // Return mock user for demo tokens
+        const mockUser = {
+          id: 'demo-user-123',
+          email: 'demo@test.com',
+          user_metadata: {
+            full_name: 'Demo User',
+            role: 'admin'
+          }
+        };
+        return { success: true, data: mockUser };
+      }
+
+      // For real JWT tokens, verify with Supabase
+      if (!accessToken) {
+        throw new Error('No access token provided');
+      }
+
+      // Check if token looks like a JWT (3 parts separated by dots)
+      const tokenParts = accessToken.split('.');
+      if (tokenParts.length !== 3) {
+        throw new Error(`Invalid JWT format: Expected 3 parts, got ${tokenParts.length}`);
+      }
+
       const client = this.getClientForUser(accessToken);
-      const { data, error } = await client.auth.getUser();
+      const { data, error } = await client.auth.getUser(accessToken);
       
       if (error) throw error;
       

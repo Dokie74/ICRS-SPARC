@@ -5,6 +5,7 @@
 const express = require('express');
 const { asyncHandler } = require('../middleware/error-handler');
 const supabaseClient = require('../../db/supabase-client');
+const { isDemoToken, getMockMaterials, getMockMaterialById } = require('../../utils/mock-data');
 
 const router = express.Router();
 
@@ -15,6 +16,46 @@ const router = express.Router();
 router.get('/', asyncHandler(async (req, res) => {
   const { limit = 1000, offset = 0, active = true, search } = req.query;
   const accessToken = req.headers.authorization?.replace('Bearer ', '');
+
+  // Use mock data for demo tokens
+  if (isDemoToken(accessToken)) {
+    const options = {
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      filters: []
+    };
+
+    // Filter by active status
+    if (active !== undefined) {
+      options.filters.push({
+        column: 'active',
+        operator: 'eq',
+        value: active === 'true'
+      });
+    }
+
+    // Search filter
+    if (search) {
+      options.filters.push({
+        column: 'name',
+        operator: 'ilike',
+        value: `%${search}%`
+      });
+    }
+
+    const result = getMockMaterials(options);
+
+    return res.json({
+      success: true,
+      data: result.data,
+      count: result.count,
+      pagination: {
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        total: result.count
+      }
+    });
+  }
 
   const options = {
     limit: parseInt(limit),

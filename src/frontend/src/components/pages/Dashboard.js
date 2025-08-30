@@ -2,7 +2,7 @@
 // Dashboard page component for ICRS SPARC
 
 import React, { useEffect, useState } from 'react';
-import { useQuery } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
 import apiClient from '../../services/api-client';
@@ -18,7 +18,7 @@ const Dashboard = () => {
     isLoading: statsLoading,
     error: statsError
   } = useQuery(
-    'dashboardStats',
+    ['dashboardStats'],
     () => apiClient.dashboard.getStats(),
     {
       refetchInterval: 30000, // Refresh every 30 seconds
@@ -34,7 +34,7 @@ const Dashboard = () => {
     data: recentActivity,
     isLoading: activityLoading
   } = useQuery(
-    'recentActivity',
+    ['recentActivity'],
     () => apiClient.dashboard.getRecentActivity({ limit: 10 }),
     {
       refetchInterval: 60000, // Refresh every minute
@@ -49,7 +49,7 @@ const Dashboard = () => {
     data: inventorySummary,
     isLoading: inventoryLoading
   } = useQuery(
-    'inventorySummary',
+    ['inventorySummary'],
     () => apiClient.dashboard.getInventorySummary(),
     {
       refetchInterval: 60000,

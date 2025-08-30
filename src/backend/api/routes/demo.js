@@ -15,7 +15,7 @@ const router = express.Router();
 router.post('/bypass-auth', asyncHandler(async (req, res) => {
   // Mock user data for testing
   const mockUser = {
-    id: 'demo-user-123',
+    id: '550e8400-e29b-41d4-a716-446655440000',
     email: 'demo@icrs.com',
     user_metadata: {
       full_name: 'Demo User',

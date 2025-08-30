@@ -6,6 +6,7 @@ const express = require('express');
 const { asyncHandler } = require('../middleware/error-handler');
 const { requireStaff, requireManager } = require('../middleware/auth');
 const supabaseClient = require('../../db/supabase-client');
+const { isDemoToken, mockInventoryLots } = require('../../utils/mock-data');
 
 const router = express.Router();
 
@@ -25,6 +26,62 @@ router.get('/lots', asyncHandler(async (req, res) => {
     active_only = 'true'
   } = req.query;
 
+  const accessToken = req.headers.authorization?.replace('Bearer ', '') || req.accessToken;
+
+  // Use mock data for demo tokens
+  if (isDemoToken(accessToken)) {
+    let filteredLots = [...mockInventoryLots];
+
+    // Apply filters
+    if (customer_id && customer_id !== 'undefined') {
+      filteredLots = filteredLots.filter(lot => lot.customer_id === customer_id);
+    }
+    if (part_id && part_id !== 'undefined') {
+      filteredLots = filteredLots.filter(lot => lot.part_id === part_id);
+    }
+    if (storage_location_id && storage_location_id !== 'undefined') {
+      filteredLots = filteredLots.filter(lot => lot.storage_location_id === storage_location_id);
+    }
+    if (active_only === 'true') {
+      filteredLots = filteredLots.filter(lot => lot.active === true);
+    }
+
+    // Apply sorting
+    filteredLots.sort((a, b) => {
+      const aVal = a[orderBy] || a.created_at;
+      const bVal = b[orderBy] || b.created_at;
+      const comparison = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+      return ascending === 'true' ? comparison : -comparison;
+    });
+
+    // Apply pagination
+    const start = parseInt(offset) || 0;
+    const count = parseInt(limit) || 100;
+    const paginatedLots = filteredLots.slice(start, start + count);
+
+    // Transform mock data to match expected format
+    const transformedData = paginatedLots.map(lot => ({
+      ...lot,
+      current_quantity: lot.quantity,
+      part_description: lot.parts?.description,
+      customer_name: lot.customers?.name,
+      customer_code: lot.customers?.code,
+      location_code: lot.storage_locations?.location_code,
+      location_description: lot.storage_locations?.description
+    }));
+
+    return res.json({
+      success: true,
+      data: transformedData,
+      count: filteredLots.length,
+      pagination: {
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        total: filteredLots.length
+      }
+    });
+  }
+
   try {
     const options = {
       select: `
@@ -40,7 +97,7 @@ router.get('/lots', asyncHandler(async (req, res) => {
       },
       limit: parseInt(limit),
       offset: parseInt(offset),
-      accessToken: req.accessToken
+      accessToken: accessToken
     };
 
     // Add filters

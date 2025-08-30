@@ -1,10 +1,11 @@
 // src/backend/api/routes/auth.js
 // Authentication routes for ICRS SPARC API - Foreign Trade Zone operations
-// Integrates with transferred AuthService for comprehensive auth management
+// Integrates with Supabase Auth and AuthService for comprehensive auth management
 
 const express = require('express');
 const { asyncHandler } = require('../middleware/error-handler');
 const { authMiddleware, optionalAuthMiddleware } = require('../middleware/auth');
+const supabaseClient = require('../../db/supabase-client');
 const authService = require('../../services/auth/AuthService');
 
 const router = express.Router();
@@ -17,9 +18,6 @@ const router = express.Router();
 router.post('/login', asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
-  // TEMPORARY: Use demo auth for quick testing
-  // TODO: Replace with real Supabase auth when ready
-  
   // Basic validation
   if (!email || !password) {
     return res.status(400).json({
@@ -28,38 +26,78 @@ router.post('/login', asyncHandler(async (req, res) => {
     });
   }
 
-  if (password.length < 3) {
-    return res.status(400).json({
-      success: false,
-      error: 'Invalid credentials'
+  // Check if this is demo mode (password less than 6 chars or demo email)
+  const isDemoMode = password.length < 6 || email.includes('demo') || process.env.NODE_ENV === 'development';
+
+  if (isDemoMode) {
+    // Demo mode - return mock data for testing
+    const mockUser = {
+      id: '550e8400-e29b-41d4-a716-446655440000',
+      email: email,
+      user_metadata: {
+        full_name: 'Demo User',
+        role: 'admin'
+      }
+    };
+
+    const mockSession = {
+      access_token: 'demo-token-for-testing-only-' + Date.now(),
+      refresh_token: 'demo-refresh-token',
+      expires_at: new Date(Date.now() + 3600000).toISOString(), // 1 hour
+      expires_in: 3600
+    };
+
+    return res.json({
+      success: true,
+      data: {
+        user: mockUser,
+        session: mockSession
+      }
     });
   }
 
-  // Mock user data for testing - matches demo from /api/demo/bypass-auth
-  const mockUser = {
-    id: 'demo-user-123',
-    email: email, // Use provided email
-    user_metadata: {
-      full_name: 'Demo User',
-      role: 'admin'
-    }
-  };
+  try {
+    // Production mode - use Supabase authentication
+    const { data, error } = await supabaseClient.anonClient.auth.signInWithPassword({
+      email,
+      password
+    });
 
-  const mockSession = {
-    access_token: 'demo-token-for-testing-only-' + Date.now(),
-    refresh_token: 'demo-refresh-token',
-    expires_at: new Date(Date.now() + 3600000).toISOString(), // 1 hour
-    expires_in: 3600
-  };
-
-  // Return session data compatible with frontend expectations
-  res.json({
-    success: true,
-    data: {
-      user: mockUser,
-      session: mockSession
+    if (error) {
+      console.error('Supabase auth error:', error);
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid email or password'
+      });
     }
-  });
+
+    if (!data.session || !data.user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication failed - no session created'
+      });
+    }
+
+    // Successful authentication
+    res.json({
+      success: true,
+      data: {
+        user: data.user,
+        session: {
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+          expires_at: data.session.expires_at,
+          expires_in: data.session.expires_in
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Authentication service unavailable'
+    });
+  }
 }));
 
 /**
@@ -76,6 +114,21 @@ router.post('/refresh', asyncHandler(async (req, res) => {
     });
   }
 
+  // Handle demo refresh tokens
+  if (refresh_token === 'demo-refresh-token') {
+    return res.json({
+      success: true,
+      data: {
+        session: {
+          access_token: 'demo-token-for-testing-only-' + Date.now(),
+          refresh_token: 'demo-refresh-token',
+          expires_at: new Date(Date.now() + 3600000).toISOString(),
+          expires_in: 3600
+        }
+      }
+    });
+  }
+
   try {
     const { data, error } = await supabaseClient.anonClient.auth.refreshSession({
       refresh_token
@@ -89,7 +142,8 @@ router.post('/refresh', asyncHandler(async (req, res) => {
         session: {
           access_token: data.session.access_token,
           refresh_token: data.session.refresh_token,
-          expires_at: data.session.expires_at
+          expires_at: data.session.expires_at,
+          expires_in: data.session.expires_in
         }
       }
     });

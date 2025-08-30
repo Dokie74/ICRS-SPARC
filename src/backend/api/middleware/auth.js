@@ -33,7 +33,7 @@ async function authMiddleware(req, res, next) {
     if (accessToken.startsWith('demo-token-for-testing-only-')) {
       // Demo mode - create mock user for testing
       req.user = {
-        id: 'demo-user-123',
+        id: '550e8400-e29b-41d4-a716-446655440000',
         email: 'demo@test.com',
         user_metadata: {
           full_name: 'Demo User',
@@ -88,7 +88,7 @@ async function optionalAuthMiddleware(req, res, next) {
         // Handle demo tokens in development mode
         if (accessToken.startsWith('demo-token-for-testing-only-')) {
           req.user = {
-            id: 'demo-user-123',
+            id: '550e8400-e29b-41d4-a716-446655440000',
             email: 'demo@test.com',
             user_metadata: {
               full_name: 'Demo User',
@@ -138,6 +138,22 @@ function requireRole(requiredRoles) {
           success: false,
           error: 'Authentication required'
         });
+      }
+
+      // Handle demo user - always has admin role
+      if (req.user.id === '550e8400-e29b-41d4-a716-446655440000') {
+        const roles = Array.isArray(requiredRoles) ? requiredRoles : [requiredRoles];
+        const demoUserRole = 'admin';
+        
+        if (!roles.includes(demoUserRole)) {
+          return res.status(403).json({
+            success: false,
+            error: `Access denied. Required role: ${roles.join(' or ')}, user role: ${demoUserRole}`
+          });
+        }
+
+        req.userRole = demoUserRole;
+        return next();
       }
 
       // Get user's role from employee profile

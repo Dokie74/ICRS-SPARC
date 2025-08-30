@@ -5,6 +5,7 @@
 const express = require('express');
 const { asyncHandler } = require('../middleware/error-handler');
 const supabaseClient = require('../../db/supabase-client');
+const { isDemoToken } = require('../../utils/mock-data');
 
 const router = express.Router();
 
@@ -64,10 +65,159 @@ router.get('/metrics', asyncHandler(async (req, res) => {
 }));
 
 /**
+ * GET /api/dashboard/stats
+ * Get basic dashboard statistics (frontend compatible route)
+ */
+router.get('/stats', asyncHandler(async (req, res) => {
+  const accessToken = req.headers.authorization?.replace('Bearer ', '') || req.accessToken;
+
+  // Use mock data for demo tokens
+  if (isDemoToken(accessToken)) {
+    const mockStats = {
+      totalInventoryValue: 2450000,
+      activeLots: 156,
+      pendingPreadmissions: 12,
+      monthlyTransactions: 324,
+      lowStockAlerts: 8,
+      completedToday: 15
+    };
+
+    return res.json({
+      success: true,
+      data: mockStats
+    });
+  }
+
+  try {
+    const [inventoryMetrics, preadmissionMetrics, transactionCount] = await Promise.all([
+      getInventoryMetrics(req.accessToken),
+      getPreadmissionMetrics(req.accessToken, new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
+      getMonthlyTransactionCount(req.accessToken)
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        totalInventoryValue: inventoryMetrics.total_value || 0,
+        activeLots: inventoryMetrics.total_lots || 0,
+        pendingPreadmissions: preadmissionMetrics.status_counts?.pending || 0,
+        monthlyTransactions: transactionCount,
+        lowStockAlerts: 0, // TODO: Implement low stock alert logic
+        completedToday: preadmissionMetrics.status_counts?.completed || 0
+      }
+    });
+  } catch (error) {
+    console.error('Get dashboard stats error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve dashboard stats'
+    });
+  }
+}));
+
+/**
+ * GET /api/dashboard/recent-activity
+ * Get recent activity feed
+ */
+router.get('/recent-activity', asyncHandler(async (req, res) => {
+  const { limit = 10 } = req.query;
+  const accessToken = req.headers.authorization?.replace('Bearer ', '') || req.accessToken;
+
+  // Use mock data for demo tokens
+  if (isDemoToken(accessToken)) {
+    const mockActivity = [
+      {
+        id: 1,
+        description: 'Container MSKU7823456 arrived at port',
+        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        type: 'arrival'
+      },
+      {
+        id: 2,
+        description: 'Inventory lot AL-001-2024 received (500 units)',
+        timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+        type: 'inventory'
+      },
+      {
+        id: 3,
+        description: 'Pre-admission PA-2024-0156 completed',
+        timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+        type: 'preadmission'
+      },
+      {
+        id: 4,
+        description: 'Customer ABC Manufacturing updated contact info',
+        timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+        type: 'customer'
+      },
+      {
+        id: 5,
+        description: 'Shipment SH-2024-0089 processed for export',
+        timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+        type: 'shipment'
+      }
+    ].slice(0, parseInt(limit));
+
+    return res.json({
+      success: true,
+      data: mockActivity
+    });
+  }
+
+  try {
+    const activity = await getRecentActivity(req.accessToken);
+    const formattedActivity = activity.map((item, index) => ({
+      id: index + 1,
+      description: formatActivityDescription(item),
+      timestamp: item.transaction_date || item.created_at,
+      type: item.transaction_type || 'transaction'
+    })).slice(0, parseInt(limit));
+
+    res.json({
+      success: true,
+      data: formattedActivity
+    });
+  } catch (error) {
+    console.error('Get recent activity error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve recent activity'
+    });
+  }
+}));
+
+/**
  * GET /api/dashboard/inventory-summary
  * Get detailed inventory summary
  */
 router.get('/inventory-summary', asyncHandler(async (req, res) => {
+  const accessToken = req.headers.authorization?.replace('Bearer ', '') || req.accessToken;
+
+  // Use mock data for demo tokens
+  if (isDemoToken(accessToken)) {
+    const mockSummary = {
+      totalParts: 127,
+      totalCustomers: 23,
+      totalLocations: 18,
+      lowStockAlerts: 5,
+      topParts: [
+        { description: 'Aluminum Brackets', quantity: 1250, value: 18750 },
+        { description: 'Steel Bolts M10', quantity: 5000, value: 15000 },
+        { description: 'Plastic Housings', quantity: 800, value: 12000 }
+      ],
+      valueByLocation: [
+        { location: 'Zone A-1', value: 450000 },
+        { location: 'Zone B-2', value: 320000 },
+        { location: 'Zone C-1', value: 280000 }
+      ]
+    };
+
+    return res.json({
+      success: true,
+      data: mockSummary
+    });
+  }
+
   try {
     const result = await supabaseClient.getAll(
       'inventory_lots',
@@ -434,6 +584,45 @@ async function getPreadmissionStatusDistribution(accessToken) {
     acc[pa.status] = (acc[pa.status] || 0) + 1;
     return acc;
   }, {});
+}
+
+async function getMonthlyTransactionCount(accessToken) {
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+
+  const result = await supabaseClient.getAll(
+    'inventory_transactions',
+    {
+      select: 'id',
+      filters: [
+        { column: 'transaction_date', value: startOfMonth.toISOString(), operator: 'gte' }
+      ],
+      accessToken
+    }
+  );
+
+  return result.success ? result.data.length : 0;
+}
+
+function formatActivityDescription(item) {
+  if (item.transaction_type) {
+    const partDescription = item.inventory_lots?.parts?.description || 'Unknown Part';
+    const lotNumber = item.inventory_lots?.lot_number || 'Unknown Lot';
+    
+    switch (item.transaction_type) {
+      case 'receipt':
+        return `Received ${Math.abs(item.quantity)} units of ${partDescription} (Lot: ${lotNumber})`;
+      case 'shipment':
+        return `Shipped ${Math.abs(item.quantity)} units of ${partDescription} (Lot: ${lotNumber})`;
+      case 'adjustment':
+        return `Inventory adjustment: ${item.quantity > 0 ? '+' : ''}${item.quantity} units of ${partDescription}`;
+      default:
+        return `${item.transaction_type}: ${Math.abs(item.quantity)} units of ${partDescription}`;
+    }
+  }
+  
+  return 'Unknown activity';
 }
 
 module.exports = router;

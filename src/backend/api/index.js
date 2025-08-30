@@ -23,6 +23,7 @@ const dashboardRoutes = require('./routes/dashboard');
 const authRoutes = require('./routes/auth');
 const materialsRoutes = require('./routes/materials');
 const locationsRoutes = require('./routes/locations');
+const adminRoutes = require('./routes/admin');
 const demoRoutes = require('./routes/demo');
 
 const app = express();
@@ -41,20 +42,7 @@ app.use(helmet({
   }
 }));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // Limit each IP to 1000 requests per windowMs
-  message: {
-    success: false,
-    error: 'Too many requests from this IP, please try again later.'
-  },
-  standardHeaders: true,
-  legacyHeaders: false
-});
-app.use('/api/', limiter);
-
-// CORS configuration
+// CORS configuration - must come BEFORE rate limiting for OPTIONS preflight
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl)
@@ -79,6 +67,21 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+// Rate limiting - comes AFTER CORS to allow OPTIONS preflight
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 2000, // Increased limit for demo mode
+  message: {
+    success: false,
+    error: 'Too many requests from this IP, please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Skip rate limiting for OPTIONS preflight requests
+  skip: (req) => req.method === 'OPTIONS'
+});
+app.use('/api/', limiter);
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -167,7 +170,8 @@ app.get('/api', (req, res) => {
         parts: '/api/parts/*',
         customers: '/api/customers/*',
         preadmission: '/api/preadmission/*',
-        dashboard: '/api/dashboard/*'
+        dashboard: '/api/dashboard/*',
+        admin: '/api/admin/*'
       },
       features: [
         'Row Level Security (RLS) integration',
@@ -187,6 +191,7 @@ app.use('/api/parts', authMiddleware, partsRoutes);
 app.use('/api/customers', authMiddleware, customersRoutes);
 app.use('/api/preadmission', authMiddleware, preadmissionRoutes);
 app.use('/api/dashboard', authMiddleware, dashboardRoutes);
+app.use('/api/admin', authMiddleware, adminRoutes);
 app.use('/api/materials', authMiddleware, materialsRoutes);
 app.use('/api/locations', authMiddleware, locationsRoutes);
 

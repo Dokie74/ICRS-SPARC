@@ -6,6 +6,7 @@ const express = require('express');
 const { asyncHandler } = require('../middleware/error-handler');
 const { requireStaff, requireManager } = require('../middleware/auth');
 const supabaseClient = require('../../db/supabase-client');
+const { isDemoToken, mockPreadmissions } = require('../../utils/mock-data');
 
 const router = express.Router();
 
@@ -26,6 +27,56 @@ router.get('/', asyncHandler(async (req, res) => {
     ascending = 'false'
   } = req.query;
 
+  const accessToken = req.headers.authorization?.replace('Bearer ', '') || req.accessToken;
+
+  // Use mock data for demo tokens
+  if (isDemoToken(accessToken)) {
+    let filteredPreadmissions = [...mockPreadmissions];
+
+    // Apply filters
+    if (status) {
+      filteredPreadmissions = filteredPreadmissions.filter(pa => pa.status === status);
+    }
+    if (customer_id && customer_id !== 'undefined') {
+      filteredPreadmissions = filteredPreadmissions.filter(pa => pa.customer_id === customer_id);
+    }
+    if (container_number) {
+      filteredPreadmissions = filteredPreadmissions.filter(pa => 
+        pa.container_number.toLowerCase().includes(container_number.toLowerCase())
+      );
+    }
+    if (start_date) {
+      filteredPreadmissions = filteredPreadmissions.filter(pa => pa.entry_date >= start_date);
+    }
+    if (end_date) {
+      filteredPreadmissions = filteredPreadmissions.filter(pa => pa.entry_date <= end_date);
+    }
+
+    // Apply sorting
+    filteredPreadmissions.sort((a, b) => {
+      const aVal = a[orderBy] || a.entry_date;
+      const bVal = b[orderBy] || b.entry_date;
+      const comparison = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+      return ascending === 'true' ? comparison : -comparison;
+    });
+
+    // Apply pagination
+    const start = parseInt(offset) || 0;
+    const count = parseInt(limit) || 100;
+    const paginatedPreadmissions = filteredPreadmissions.slice(start, start + count);
+
+    return res.json({
+      success: true,
+      data: paginatedPreadmissions,
+      count: filteredPreadmissions.length,
+      pagination: {
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        total: filteredPreadmissions.length
+      }
+    });
+  }
+
   try {
     const options = {
       select: `
@@ -42,7 +93,7 @@ router.get('/', asyncHandler(async (req, res) => {
       },
       limit: parseInt(limit),
       offset: parseInt(offset),
-      accessToken: req.accessToken
+      accessToken: accessToken
     };
 
     // Add filters
