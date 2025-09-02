@@ -12,6 +12,10 @@ const initialState = {
   sidebarCollapsed: false,
   darkMode: false,
   
+  // Modal state
+  activeModal: null,
+  modalData: null,
+  
   // Data loading states
   loading: {
     customers: false,
@@ -49,6 +53,8 @@ const APP_ACTIONS = {
   SET_LOADING: 'SET_LOADING',
   SET_SIDEBAR_COLLAPSED: 'SET_SIDEBAR_COLLAPSED',
   SET_DARK_MODE: 'SET_DARK_MODE',
+  SHOW_MODAL: 'SHOW_MODAL',
+  HIDE_MODAL: 'HIDE_MODAL',
   SET_CUSTOMERS: 'SET_CUSTOMERS',
   SET_PARTS: 'SET_PARTS',
   SET_LOCATIONS: 'SET_LOCATIONS',
@@ -85,6 +91,20 @@ const appReducer = (state, action) => {
       return {
         ...state,
         darkMode: action.payload
+      };
+
+    case APP_ACTIONS.SHOW_MODAL:
+      return {
+        ...state,
+        activeModal: action.payload.modalType,
+        modalData: action.payload.modalData
+      };
+
+    case APP_ACTIONS.HIDE_MODAL:
+      return {
+        ...state,
+        activeModal: null,
+        modalData: null
       };
 
     case APP_ACTIONS.SET_CUSTOMERS:
@@ -430,6 +450,21 @@ export const AppProvider = ({ children }) => {
     });
   };
 
+  // Show modal
+  const showModal = (modalType, modalData = null) => {
+    dispatch({
+      type: APP_ACTIONS.SHOW_MODAL,
+      payload: { modalType, modalData }
+    });
+  };
+
+  // Hide modal
+  const hideModal = () => {
+    dispatch({
+      type: APP_ACTIONS.HIDE_MODAL
+    });
+  };
+
   // Context value
   const value = {
     // State
@@ -444,6 +479,8 @@ export const AppProvider = ({ children }) => {
     showSuccess,
     showError,
     showInfo,
+    showModal,
+    hideModal,
     refreshData,
     clearError,
     loadDashboardStats,

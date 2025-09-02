@@ -19,6 +19,9 @@ const inventoryRoutes = require('./routes/inventory');
 const partsRoutes = require('./routes/parts');
 const customersRoutes = require('./routes/customers');
 const preadmissionRoutes = require('./routes/preadmission');
+const preshipmentsRoutes = require('./routes/preshipments');
+const shippingRoutes = require('./routes/shipping');
+const receivingRoutes = require('./routes/receiving');
 const dashboardRoutes = require('./routes/dashboard');
 const authRoutes = require('./routes/auth');
 const materialsRoutes = require('./routes/materials');
@@ -170,6 +173,9 @@ app.get('/api', (req, res) => {
         parts: '/api/parts/*',
         customers: '/api/customers/*',
         preadmission: '/api/preadmission/*',
+        preshipments: '/api/preshipments/*',
+        shipping: '/api/shipping/*',
+        receiving: '/api/receiving/*',
         dashboard: '/api/dashboard/*',
         admin: '/api/admin/*'
       },
@@ -190,6 +196,9 @@ app.use('/api/inventory', authMiddleware, inventoryRoutes);
 app.use('/api/parts', authMiddleware, partsRoutes);
 app.use('/api/customers', authMiddleware, customersRoutes);
 app.use('/api/preadmission', authMiddleware, preadmissionRoutes);
+app.use('/api/preshipments', authMiddleware, preshipmentsRoutes);
+app.use('/api/shipping', authMiddleware, shippingRoutes);
+app.use('/api/receiving', authMiddleware, receivingRoutes);
 app.use('/api/dashboard', authMiddleware, dashboardRoutes);
 app.use('/api/admin', authMiddleware, adminRoutes);
 app.use('/api/materials', authMiddleware, materialsRoutes);

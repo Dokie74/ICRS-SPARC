@@ -15,6 +15,7 @@ import { AppProvider, useApp } from './contexts/AppContext';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import LoadingSpinner from './components/shared/LoadingSpinner';
 import Sidebar from './components/shared/Sidebar';
+import ModalContainer from './components/modals/ModalContainer';
 
 // Pages
 import Login from './components/pages/Login';
@@ -22,8 +23,9 @@ import Dashboard from './components/pages/Dashboard';
 import Inventory from './components/pages/Inventory';
 import PreAdmissions from './components/pages/PreAdmissions';
 import PreShipments from './components/pages/PreShipments';
+import Shipping from './components/pages/Shipping';
+import Receiving from './components/pages/Receiving';
 import Parts from './components/pages/Parts';
-import Customers from './components/pages/Customers';
 import Reports from './components/pages/Reports';
 import Admin from './components/pages/Admin';
 import HTSBrowser from './components/pages/HTSBrowser';
@@ -196,6 +198,24 @@ const App = () => {
                   />
                   
                   <Route 
+                    path="/shipping" 
+                    element={
+                      <ProtectedRoute>
+                        <Shipping />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  <Route 
+                    path="/receiving" 
+                    element={
+                      <ProtectedRoute>
+                        <Receiving />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  <Route 
                     path="/parts" 
                     element={
                       <ProtectedRoute>
@@ -204,14 +224,6 @@ const App = () => {
                     } 
                   />
                   
-                  <Route 
-                    path="/customers" 
-                    element={
-                      <ProtectedRoute>
-                        <Customers />
-                      </ProtectedRoute>
-                    } 
-                  />
                   
                   <Route 
                     path="/hts-browser" 
@@ -290,6 +302,9 @@ const App = () => {
                   },
                 }}
               />
+              
+              {/* Modal System */}
+              <ModalContainer />
             </Router>
             </AuthDataLoader>
           </AppProvider>

@@ -1,0 +1,111 @@
+// src/frontend/components/modals/ModalContainer.js
+// Modal container system for ICRS SPARC
+// Adapted from original icrs-app modal system with React Query integration
+
+import React from 'react';
+import { useApp } from '../../contexts/AppContext';
+
+// Import modal components (will be created progressively)
+import AddEmployeeModal from './AddEmployeeModal';
+import AddPartModal from './AddPartModal';
+import AddCustomerModal from './AddCustomerModal';
+import AddSupplierModal from './AddSupplierModal';
+import AddPreadmissionModal from './AddPreadmissionModal';
+import CreatePreshipmentModal from './CreatePreshipmentModal';
+
+const ModalContainer = () => {
+  const { activeModal, modalData, hideModal, showSuccess, showError, showModal } = useApp();
+
+  // Modal component registry - maps modal types to components
+  const modalComponents = {
+    // Employee/User Management
+    'EmployeeCreateModal': AddEmployeeModal,
+    'add-employee-modal': AddEmployeeModal,
+    'edit-employee-modal': AddEmployeeModal, // Will handle edit vs create via props
+    
+    // Parts Management
+    'PartCreateModal': AddPartModal,
+    'add-part-modal': AddPartModal,
+    'edit-part-modal': AddPartModal,
+    'part-detail-modal': AddPartModal,
+    
+    // Customer Management
+    'CustomerCreateModal': AddCustomerModal,
+    'add-customer-modal': AddCustomerModal,
+    'edit-customer-modal': AddCustomerModal,
+    
+    // Supplier Management
+    'SupplierCreateModal': AddSupplierModal,
+    'add-supplier-modal': AddSupplierModal,
+    'edit-supplier-modal': AddSupplierModal,
+    
+    // Pre-admission Workflows  
+    'create-preadmission-modal': AddPreadmissionModal,
+    'add-preadmission-modal': AddPreadmissionModal,
+    'edit-preadmission-modal': AddPreadmissionModal,
+    'PreadmissionCreateModal': AddPreadmissionModal,
+    
+    // Pre-shipment Workflows
+    'create-preshipment-modal': CreatePreshipmentModal,
+    'add-preshipment-modal': CreatePreshipmentModal,
+    'edit-preshipment-modal': CreatePreshipmentModal,
+    'PreshipmentCreateModal': CreatePreshipmentModal,
+    
+    // Add more modal mappings as components are created
+  };
+
+  const ModalComponent = modalComponents[activeModal];
+
+  if (!ModalComponent) {
+    // Log missing modal for debugging
+    if (activeModal) {
+      console.warn(`Modal component not found for type: ${activeModal}`);
+    }
+    return null;
+  }
+
+  // Standardized props for all modals
+  const getModalProps = () => {
+    const baseProps = {
+      isOpen: true,
+      onClose: hideModal,
+      onSuccess: (message) => {
+        showSuccess(message);
+        hideModal();
+      },
+      onError: (message) => {
+        showError(message);
+      },
+      showModal,
+      data: modalData
+    };
+
+    // Handle specific modal prop requirements
+    switch (activeModal) {
+      case 'edit-employee-modal':
+        return { ...baseProps, employee: modalData, isEdit: true };
+      
+      case 'edit-part-modal':
+        return { ...baseProps, part: modalData, isEdit: true };
+        
+      case 'edit-customer-modal':
+        return { ...baseProps, customer: modalData, isEdit: true };
+        
+      case 'edit-supplier-modal':
+        return { ...baseProps, supplier: modalData, isEdit: true };
+        
+      case 'edit-preadmission-modal':
+        return { ...baseProps, preadmission: modalData, isEdit: true };
+        
+      case 'edit-preshipment-modal':
+        return { ...baseProps, preshipment: modalData, isEdit: true };
+        
+      default:
+        return baseProps;
+    }
+  };
+
+  return <ModalComponent {...getModalProps()} />;
+};
+
+export default ModalContainer;

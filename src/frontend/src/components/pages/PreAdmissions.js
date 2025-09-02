@@ -13,13 +13,7 @@ const STATUS_CONFIG = {
 };
 
 const PreAdmissions = () => {
-  const { showSuccess, showError } = useApp();
-  
-  // Temporary modal function until modal system is implemented
-  const showModal = (modalType, data) => {
-    console.log('Modal requested:', modalType, data);
-    // TODO: Implement proper modal system
-  };
+  const { showSuccess, showError, showModal } = useApp();
   const [filters, setFilters] = useState({
     status: '',
     search: ''
@@ -33,7 +27,7 @@ const PreAdmissions = () => {
     refetch: refetchPreadmissions
   } = useQuery(
     ['preadmissions'],
-    () => apiClient.preadmissions.getAll(),
+    () => apiClient.preadmission.getAll(),
     {
       staleTime: 2 * 60 * 1000, // 2 minutes
       cacheTime: 5 * 60 * 1000, // 5 minutes

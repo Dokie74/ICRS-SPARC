@@ -357,6 +357,49 @@ class ApiClient {
     }
   };
 
+  // Preshipment API methods
+  preshipments = {
+    getAll: async (params = {}) => {
+      return this.get('/api/preshipments', params);
+    },
+
+    getById: async (id) => {
+      return this.get(`/api/preshipments/${id}`);
+    },
+
+    create: async (preshipmentData) => {
+      return this.post('/api/preshipments', preshipmentData);
+    },
+
+    update: async (id, preshipmentData) => {
+      return this.put(`/api/preshipments/${id}`, preshipmentData);
+    },
+
+    delete: async (id) => {
+      return this.delete(`/api/preshipments/${id}`);
+    },
+
+    updateStatus: async (id, status, notes = '') => {
+      return this.patch(`/api/preshipments/${id}/status`, { status, notes });
+    },
+
+    generateEntryS: async (id) => {
+      return this.post(`/api/preshipments/${id}/generate-entry-summary`);
+    },
+
+    fileWithCBP: async (id) => {
+      return this.post(`/api/preshipments/${id}/file-cbp`);
+    },
+
+    validateACEEntry: async (entryData) => {
+      return this.post('/api/preshipments/validate-ace-entry', entryData);
+    },
+
+    getStats: async () => {
+      return this.get('/api/preshipments/stats/dashboard');
+    }
+  };
+
   // Dashboard API methods
   dashboard = {
     getStats: async () => {
@@ -401,4 +444,4 @@ apiClient.initialize();
 export default apiClient;
 
 // Export individual API groups for convenience
-export const { auth, inventory, parts, customers, preadmission, dashboard, utils } = apiClient;
+export const { auth, inventory, parts, customers, preadmission, preshipments, dashboard, utils } = apiClient;

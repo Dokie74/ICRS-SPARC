@@ -1,7 +1,19 @@
-# Claude Code Configuration — SPARC Development Environment (Flow‑Free)
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+# Claude Code Configuration — ICRS SPARC Development Environment (Flow‑Free)
 
 > **Purpose**: This is the single source of truth for how work is executed in this repo using **Claude Code**.  
-> **Scope**:  MCP servers are optional connectors only. **Claude Code’s Task tool executes all work.**
+> **Scope**: MCP servers are optional connectors only. **Claude Code's Task tool executes all work.**
+
+## 🏭 Application Overview
+
+**ICRS SPARC** is a Foreign Trade Zone Operations Management System built with:
+- **Backend**: Node.js/Express API with Supabase integration
+- **Frontend**: React 18 with Tailwind CSS and React Query
+- **Database**: PostgreSQL via Supabase with Row Level Security (RLS)
+- **Domain**: Foreign Trade Zone inventory management, customs compliance, warehouse operations
 
 ---
 
