@@ -28,6 +28,7 @@ const materialsRoutes = require('./routes/materials');
 const locationsRoutes = require('./routes/locations');
 const adminRoutes = require('./routes/admin');
 const demoRoutes = require('./routes/demo');
+const htsRoutes = require('./routes/hts');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -177,7 +178,8 @@ app.get('/api', (req, res) => {
         shipping: '/api/shipping/*',
         receiving: '/api/receiving/*',
         dashboard: '/api/dashboard/*',
-        admin: '/api/admin/*'
+        admin: '/api/admin/*',
+        hts: '/api/hts/*'
       },
       features: [
         'Row Level Security (RLS) integration',
@@ -203,6 +205,7 @@ app.use('/api/dashboard', authMiddleware, dashboardRoutes);
 app.use('/api/admin', authMiddleware, adminRoutes);
 app.use('/api/materials', authMiddleware, materialsRoutes);
 app.use('/api/locations', authMiddleware, locationsRoutes);
+app.use('/api/hts', authMiddleware, htsRoutes);
 
 // 404 handler for API routes
 app.use('/api/*', (req, res) => {
