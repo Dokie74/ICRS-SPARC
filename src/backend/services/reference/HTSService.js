@@ -14,8 +14,12 @@ class HTSService extends BaseService {
     this.htsData = null;
     this.lastUpdated = null;
     this.cacheFile = path.join(__dirname, '../../../../cache/hts-cache.json');
+    this.publicDataFile = path.join(__dirname, '../../../../public/hts-data.json');
     this.currentVersion = '2025_revision_16';
     this.dataUrl = 'https://www.usitc.gov/sites/default/files/tata/hts/hts_2025_revision_16_json.json';
+    this.csvDataUrl = 'https://www.usitc.gov/sites/default/files/tata/hts/hts_2025_revision_16_csv.csv';
+    this.localDataUrl = '/hts-data.json'; // For frontend access
+    this.corsProxy = 'https://cors-anywhere.herokuapp.com/';
     this.cacheExpiryDays = 7; // Cache for 7 days
     this.initializing = false;
     this.initPromise = null;
@@ -66,36 +70,161 @@ class HTSService extends BaseService {
     return await this.fetchHtsData(options);
   }
 
-  // Fetch HTS data from USITC
+  // Fetch HTS data using multi-tier approach
   async fetchHtsData(options = {}) {
     try {
-      console.log('Attempting to fetch HTS data from USITC...');
+      console.log('Fetching HTS data using multi-tier approach...');
       
-      // Try direct fetch first
+      // Tier 1: Try local public file first (if downloaded by scripts)
       try {
-        const data = await this.downloadJson(this.dataUrl);
+        console.log('Tier 1: Checking for local HTS data file...');
+        const localData = await this.loadLocalHtsData();
+        if (localData && Array.isArray(localData) && localData.length > 0) {
+          this.htsData = localData;
+          this.lastUpdated = new Date();
+          await this.cacheData(localData);
+          console.log(`HTS data loaded from local file: ${localData.length} entries`);
+          return { success: true, source: 'local', count: localData.length };
+        }
+      } catch (localError) {
+        console.warn('Tier 1 failed - Local file not available:', localError.message);
+      }
+
+      // Tier 2: Try direct USITC fetch
+      try {
+        console.log('Tier 2: Attempting direct USITC fetch...');
+        const data = await this.downloadJsonWithProgress(this.dataUrl);
         if (Array.isArray(data) && data.length > 0) {
           this.htsData = data;
           this.lastUpdated = new Date();
           await this.cacheData(data);
-          console.log(`HTS data loaded from USITC: ${data.length} entries`);
+          await this.saveToPublicFile(data); // Save for future local access
+          console.log(`HTS data loaded from USITC direct: ${data.length} entries`);
           return { success: true, source: 'network', count: data.length };
         }
       } catch (networkError) {
-        console.warn('USITC direct fetch failed:', networkError.message);
+        console.warn('Tier 2 failed - USITC direct fetch failed:', networkError.message);
       }
 
-      // Fallback to comprehensive test data
-      console.warn('Network methods failed, using comprehensive fallback data');
+      // Tier 3: Try CORS proxy approach
+      try {
+        console.log('Tier 3: Attempting CORS proxy fetch...');
+        const corsUrl = this.corsProxy + this.dataUrl;
+        const data = await this.downloadJsonWithProgress(corsUrl, {
+          'X-Requested-With': 'XMLHttpRequest'
+        });
+        if (Array.isArray(data) && data.length > 0) {
+          this.htsData = data;
+          this.lastUpdated = new Date();
+          await this.cacheData(data);
+          await this.saveToPublicFile(data); // Save for future local access
+          console.log(`HTS data loaded via CORS proxy: ${data.length} entries`);
+          return { success: true, source: 'proxy', count: data.length };
+        }
+      } catch (corsError) {
+        console.warn('Tier 3 failed - CORS proxy failed:', corsError.message);
+      }
+
+      // Tier 4: Fallback to comprehensive development data
+      console.warn('All network tiers failed, using comprehensive fallback data');
       return this.createFallbackData();
       
     } catch (error) {
-      console.error('Error fetching HTS data:', error);
+      console.error('Error in fetchHtsData:', error);
       return this.createFallbackData();
     }
   }
 
-  // Download JSON from URL
+  // Load local HTS data file (for Tier 1 approach)
+  async loadLocalHtsData() {
+    try {
+      const data = await fs.readFile(this.publicDataFile, 'utf8');
+      const jsonData = JSON.parse(data);
+      
+      if (Array.isArray(jsonData) && jsonData.length > 0) {
+        console.log(`Local HTS data loaded: ${jsonData.length} entries`);
+        return jsonData;
+      }
+      
+      throw new Error('Local data file exists but is empty or invalid');
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        throw new Error('Local HTS data file not found');
+      }
+      throw error;
+    }
+  }
+
+  // Download JSON with progress indicators
+  async downloadJsonWithProgress(url, headers = {}) {
+    return new Promise((resolve, reject) => {
+      const request = https.get(url, { headers }, (response) => {
+        if (response.statusCode !== 200) {
+          reject(new Error(`HTTP ${response.statusCode}: ${response.statusMessage}`));
+          return;
+        }
+
+        let data = '';
+        const totalLength = parseInt(response.headers['content-length']) || 0;
+        let downloadedLength = 0;
+
+        response.on('data', (chunk) => {
+          data += chunk;
+          downloadedLength += chunk.length;
+          
+          // Show progress for large downloads
+          if (totalLength > 0 && totalLength > 1000000) { // Show progress for files > 1MB
+            const percent = Math.round((downloadedLength / totalLength) * 100);
+            if (percent % 10 === 0) { // Log every 10%
+              console.log(`Download progress: ${percent}% (${Math.round(downloadedLength/1024/1024)}MB/${Math.round(totalLength/1024/1024)}MB)`);
+            }
+          }
+        });
+
+        response.on('end', () => {
+          try {
+            if (totalLength > 1000000) {
+              console.log('Download complete. Parsing JSON data...');
+            }
+            const jsonData = JSON.parse(data);
+            resolve(jsonData);
+          } catch (error) {
+            reject(new Error(`JSON parse error: ${error.message}`));
+          }
+        });
+      });
+
+      request.on('error', (error) => {
+        reject(new Error(`Network error: ${error.message}`));
+      });
+      
+      request.setTimeout(60000, () => {
+        request.destroy();
+        reject(new Error('Download timeout (60s)'));
+      });
+    });
+  }
+
+  // Save HTS data to public file for future local access
+  async saveToPublicFile(data) {
+    try {
+      const publicDir = path.dirname(this.publicDataFile);
+      await fs.mkdir(publicDir, { recursive: true });
+      
+      const jsonString = JSON.stringify(data, null, 2);
+      await fs.writeFile(this.publicDataFile, jsonString);
+      
+      console.log(`HTS data saved to public file: ${this.publicDataFile}`);
+      console.log(`File size: ${Math.round(jsonString.length / 1024 / 1024)} MB`);
+      
+      return true;
+    } catch (error) {
+      console.warn('Failed to save HTS data to public file:', error.message);
+      return false;
+    }
+  }
+
+  // Download JSON from URL (legacy method - kept for compatibility)
   async downloadJson(url) {
     return new Promise((resolve, reject) => {
       const request = https.get(url, (response) => {

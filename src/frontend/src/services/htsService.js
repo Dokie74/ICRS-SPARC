@@ -2,7 +2,7 @@
 // Frontend HTS service for ICRS SPARC
 // Handles HTS code lookup, duty calculations, and data caching
 
-import { apiClient } from './api-client';
+import apiClient from './api-client';
 
 class HTSService {
   constructor() {
@@ -125,7 +125,7 @@ class HTSService {
     }
 
     try {
-      const response = await apiClient.get('/hts/search', { params });
+      const response = await apiClient.get('/api/hts/search', { params });
       
       const result = {
         success: true,
@@ -207,7 +207,7 @@ class HTSService {
     }
 
     try {
-      const response = await apiClient.post('/hts/duty-rate', {
+      const response = await apiClient.post('/api/hts/duty-rate', {
         htsCode,
         countryOfOrigin
       });
@@ -241,7 +241,7 @@ class HTSService {
     }
 
     try {
-      const response = await apiClient.get('/hts/popular', { 
+      const response = await apiClient.get('/api/hts/popular', { 
         params: { limit } 
       });
       
@@ -274,7 +274,7 @@ class HTSService {
     }
 
     try {
-      const response = await apiClient.get('/hts/countries');
+      const response = await apiClient.get('/api/hts/countries');
       
       const result = {
         success: true,
@@ -312,7 +312,7 @@ class HTSService {
     }
 
     try {
-      const response = await apiClient.get('/hts/browse', { params });
+      const response = await apiClient.get('/api/hts/browse', { params });
       
       const result = {
         success: true,
@@ -336,7 +336,7 @@ class HTSService {
   // Get HTS service status
   async getStatus() {
     try {
-      const response = await apiClient.get('/hts/status');
+      const response = await apiClient.get('/api/hts/status');
       
       return {
         success: true,
@@ -354,7 +354,7 @@ class HTSService {
   // Refresh HTS data (admin only)
   async refreshData() {
     try {
-      const response = await apiClient.post('/hts/refresh');
+      const response = await apiClient.post('/api/hts/refresh');
       
       // Clear cache after refresh
       this.cache.clear();

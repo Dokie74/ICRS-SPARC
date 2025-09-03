@@ -5,8 +5,8 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const htsService = require('../../services/reference/HTSService');
-const { authenticateToken } = require('../middleware/auth');
-const { validateRequest } = require('../middleware/validation');
+const { authMiddleware } = require('../middleware/auth');
+// const { validateRequest } = require('../middleware/validation');
 const router = express.Router();
 
 // Rate limiting for HTS endpoints
@@ -39,7 +39,7 @@ router.use(async (req, res, next) => {
  * @access  Private
  * @params  ?q={searchTerm}&type={description|code}&limit={number}&countryOfOrigin={countryCode}
  */
-router.get('/search', authenticateToken, async (req, res) => {
+router.get('/search', authMiddleware, async (req, res) => {
   try {
     const { q: searchTerm, type = 'description', limit = 100, countryOfOrigin } = req.query;
 
@@ -96,7 +96,7 @@ router.get('/search', authenticateToken, async (req, res) => {
  * @access  Private
  * @params  ?countryOfOrigin={countryCode}
  */
-router.get('/code/:htsCode', authenticateToken, async (req, res) => {
+router.get('/code/:htsCode', authMiddleware, async (req, res) => {
   try {
     const { htsCode } = req.params;
     const { countryOfOrigin } = req.query;
@@ -144,11 +144,11 @@ router.get('/code/:htsCode', authenticateToken, async (req, res) => {
  * @body    { htsCode: string, countryOfOrigin: string }
  */
 router.post('/duty-rate', 
-  authenticateToken,
-  validateRequest([
-    { field: 'htsCode', type: 'string', required: true },
-    { field: 'countryOfOrigin', type: 'string', required: true, minLength: 2, maxLength: 2 }
-  ]),
+  authMiddleware,
+  // validateRequest([
+  //   { field: 'htsCode', type: 'string', required: true },
+  //   { field: 'countryOfOrigin', type: 'string', required: true, minLength: 2, maxLength: 2 }
+  // ]),
   async (req, res) => {
     try {
       const { htsCode, countryOfOrigin } = req.body;
@@ -191,7 +191,7 @@ router.post('/duty-rate',
  * @access  Private
  * @params  ?limit={number}
  */
-router.get('/popular', authenticateToken, async (req, res) => {
+router.get('/popular', authMiddleware, async (req, res) => {
   try {
     const { limit = 20 } = req.query;
 
@@ -224,7 +224,7 @@ router.get('/popular', authenticateToken, async (req, res) => {
  * @desc    Get list of supported countries for duty calculations
  * @access  Private
  */
-router.get('/countries', authenticateToken, async (req, res) => {
+router.get('/countries', authMiddleware, async (req, res) => {
   try {
     const countries = htsService.getCountryList();
 
@@ -251,7 +251,7 @@ router.get('/countries', authenticateToken, async (req, res) => {
  * @access  Private
  * @params  ?offset={number}&limit={number}&includeHeaders={boolean}
  */
-router.get('/browse', authenticateToken, async (req, res) => {
+router.get('/browse', authMiddleware, async (req, res) => {
   try {
     const { 
       offset = 0, 
@@ -298,14 +298,16 @@ router.get('/browse', authenticateToken, async (req, res) => {
  * @access  Private (Admin)
  */
 router.post('/refresh', 
-  authenticateToken,
+  authMiddleware,
   async (req, res) => {
     try {
       // Check if user has admin permissions
-      if (req.user.role !== 'admin') {
+      const userRole = req.user.user_metadata?.role || req.user.role;
+      if (userRole !== 'admin') {
         return res.status(403).json({
           success: false,
-          error: 'Admin privileges required for data refresh'
+          error: 'Admin privileges required for data refresh',
+          debug: `User role: ${userRole}, Required: admin`
         });
       }
 
@@ -336,7 +338,7 @@ router.post('/refresh',
  * @desc    Get HTS service status and cache information
  * @access  Private
  */
-router.get('/status', authenticateToken, async (req, res) => {
+router.get('/status', authMiddleware, async (req, res) => {
   try {
     const status = htsService.getDataStatus();
 

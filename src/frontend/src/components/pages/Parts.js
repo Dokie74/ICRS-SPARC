@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import { useApp } from '../../contexts/AppContext';
 import apiClient from '../../services/api-client';
+import HTSLookupModal from '../modals/HTSLookupModal';
 
 // Material types and categories
 const MATERIAL_CATEGORIES = {
@@ -25,7 +27,7 @@ const PART_STATUS = {
 };
 
 // Part card component
-const PartCard = ({ part, onEdit, onView }) => {
+const PartCard = ({ part, onEdit, onView, onHTSLookup, onHTSUpdate }) => {
   const material = MATERIAL_CATEGORIES[part.material] || MATERIAL_CATEGORIES.other;
   const status = PART_STATUS[part.status || 'active'] || PART_STATUS.active;
   
@@ -84,16 +86,50 @@ const PartCard = ({ part, onEdit, onView }) => {
           </p>
         </div>
         <div>
-          <p className="text-sm text-gray-500 mb-1">HTS Code</p>
-          <p className="font-mono text-sm text-blue-600">
-            {part.hts_code || 'Not assigned'}
-          </p>
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-sm text-gray-500">HTS Code</p>
+            {part.hts_code ? (
+              <button
+                onClick={() => onHTSUpdate(part)}
+                className="text-xs text-blue-600 hover:text-blue-800 focus:outline-none"
+                title="Update HTS Code"
+              >
+                <i className="fas fa-edit"></i>
+              </button>
+            ) : null}
+          </div>
+          {part.hts_code ? (
+            <div className="space-y-1">
+              <p className="font-mono text-sm text-blue-600">{part.hts_code}</p>
+              {part.hts_description && (
+                <p className="text-xs text-gray-600 line-clamp-2" title={part.hts_description}>
+                  {part.hts_description}
+                </p>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={() => onHTSLookup(part)}
+              className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <i className="fas fa-search mr-1"></i>
+              Lookup HTS
+            </button>
+          )}
         </div>
         <div>
           <p className="text-sm text-gray-500 mb-1">Country of Origin</p>
-          <p className="font-medium text-gray-900">
-            {part.country_of_origin || 'Not specified'}
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="font-medium text-gray-900">
+              {part.country_of_origin || 'Not specified'}
+            </p>
+            {part.hts_code && part.country_of_origin && (
+              <span className="text-xs text-green-600 font-medium">
+                <i className="fas fa-calculator mr-1"></i>
+                Duty Ready
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -376,17 +412,21 @@ const PartsStats = ({ filteredParts, loading }) => {
 const Parts = () => {
   const { showSuccess, showError } = useApp();
   
-  // Temporary modal function until modal system is implemented
-  const showModal = (modalType, data) => {
-    console.log('Modal requested:', modalType, data);
-    // TODO: Implement proper modal system
-  };
-  
   // Local state
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({});
   const [sortBy, setSortBy] = useState('created_at');
   const [sortOrder, setSortOrder] = useState('desc');
+  
+  // HTS modal state
+  const [showHTSModal, setShowHTSModal] = useState(false);
+  const [selectedPartForHTS, setSelectedPartForHTS] = useState(null);
+  
+  // Temporary modal function for other modals until modal system is implemented
+  const showModal = (modalType, data) => {
+    console.log('Modal requested:', modalType, data);
+    // TODO: Implement proper modal system for non-HTS modals
+  };
 
   // Fetch parts data with React Query
   const {
@@ -483,6 +523,53 @@ const Parts = () => {
 
   const handleCreatePart = () => {
     showModal('add-part-modal');
+  };
+
+  // HTS event handlers
+  const handleHTSLookup = (part) => {
+    setSelectedPartForHTS(part);
+    setShowHTSModal(true);
+  };
+
+  const handleHTSUpdate = (part) => {
+    setSelectedPartForHTS(part);
+    setShowHTSModal(true);
+  };
+
+  const handleHTSSelect = async (htsSelection) => {
+    try {
+      if (!selectedPartForHTS) return;
+
+      // Update part with selected HTS information
+      const updateData = {
+        hts_code: htsSelection.htsno,
+        hts_description: htsSelection.description,
+        country_of_origin: htsSelection.countryOfOrigin,
+        // Store duty information for reference
+        duty_info: htsSelection.dutyInfo
+      };
+
+      // Make API call to update part (assuming we have this endpoint)
+      await apiClient.put(`/api/parts/${selectedPartForHTS.id}`, updateData);
+      
+      toast.success(`HTS code ${htsSelection.htsno} assigned to ${selectedPartForHTS.part_number || selectedPartForHTS.id}`);
+      
+      // Refresh parts data
+      refetchParts();
+      
+      // Close modal
+      setShowHTSModal(false);
+      setSelectedPartForHTS(null);
+      
+    } catch (error) {
+      console.error('Failed to update part with HTS code:', error);
+      toast.error(`Failed to assign HTS code: ${error.message}`);
+    }
+  };
+
+  const handleHTSModalClose = () => {
+    setShowHTSModal(false);
+    setSelectedPartForHTS(null);
   };
 
   if (partsLoading) {
@@ -585,9 +672,21 @@ const Parts = () => {
               part={part}
               onView={handleViewPart}
               onEdit={handleEditPart}
+              onHTSLookup={handleHTSLookup}
+              onHTSUpdate={handleHTSUpdate}
             />
           ))}
         </div>
+      )}
+      
+      {/* HTS Lookup Modal */}
+      {showHTSModal && selectedPartForHTS && (
+        <HTSLookupModal
+          onClose={handleHTSModalClose}
+          onSelect={handleHTSSelect}
+          currentHtsCode={selectedPartForHTS.hts_code || ''}
+          currentCountryOfOrigin={selectedPartForHTS.country_of_origin || ''}
+        />
       )}
     </div>
   );

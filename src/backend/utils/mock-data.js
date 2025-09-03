@@ -183,9 +183,18 @@ const mockMaterials = [
 // Mock parts data (for backwards compatibility)
 const mockParts = mockMaterials.map(material => ({
   ...material,
-  material: material.name,
+  material: material.category?.toLowerCase()?.includes('steel') ? 'steel' : 
+           material.category?.toLowerCase()?.includes('aluminum') ? 'aluminum' :
+           material.category?.toLowerCase()?.includes('electronic') ? 'other' :
+           material.category?.toLowerCase()?.includes('plastic') ? 'plastic' : 'other',
   part_number: material.code,
-  unit_cost: material.standard_cost
+  unit_cost: material.standard_cost,
+  standard_value: material.standard_cost,
+  hts_code: material.hs_code,
+  hts_description: material.description,
+  gross_weight: Math.round(Math.random() * 10 + 1), // Random weight between 1-10 kg
+  manufacturer_id: `MFG-${Math.floor(Math.random() * 100)}`,
+  status: 'active'
 }));
 
 // Mock inventory lots

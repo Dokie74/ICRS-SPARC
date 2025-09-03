@@ -1,0 +1,741 @@
+<testsuites id="" name="" tests="28" failures="24" skipped="0" errors="0" time="145.858017">
+<testsuite name="hts-import.spec.js" timestamp="2025-09-03T01:14:12.130Z" hostname="chromium" tests="4" failures="3" skipped="0" time="104.462" errors="0">
+<testcase name="HTS Data Import › should display HTS Browser page with import button" classname="hts-import.spec.js" time="20.88">
+<failure message="hts-import.spec.js:20:7 should display HTS Browser page with import button" type="FAILURE">
+<![CDATA[  [chromium] › hts-import.spec.js:20:7 › HTS Data Import › should display HTS Browser page with import button 
+
+    Error: expect.toContainText: Error: strict mode violation: locator('h1') resolved to 2 elements:
+        1) <h1 class="text-lg font-semibold text-white">SPARC</h1> aka getByText('SPARC', { exact: true })
+        2) <h1 class="text-lg font-semibold text-gray-900">ICRS SPARC</h1> aka getByText('ICRS SPARC', { exact: true })
+
+    Call log:
+      - Expect "toContainText" with timeout 10000ms
+      - waiting for locator('h1')
+
+
+      23 |     
+      24 |     // Check if page loaded properly
+    > 25 |     await expect(page.locator('h1')).toContainText('HTS Browser');
+         |                                      ^
+      26 |     await expect(page.locator('text=Complete USITC Harmonized Tariff Schedule Database')).toBeVisible();
+      27 |     
+      28 |     // Check if import button is visible
+        at C:\Users\DavidOkonoski\OneDrive\Documents\Integrator Consulting, LLC\App Development\ICRS_SPARC\tests\e2e\hts-import.spec.js:25:38
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\hts-import-HTS-Data-Import-b0969-ser-page-with-import-button-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\hts-import-HTS-Data-Import-b0969-ser-page-with-import-button-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\hts-import-HTS-Data-Import-b0969-ser-page-with-import-button-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|hts-import-HTS-Data-Import-b0969-ser-page-with-import-button-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|hts-import-HTS-Data-Import-b0969-ser-page-with-import-button-chromium\video.webm]]
+
+[[ATTACHMENT|hts-import-HTS-Data-Import-b0969-ser-page-with-import-button-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="HTS Data Import › should show user permissions and role" classname="hts-import.spec.js" time="16.081">
+<failure message="hts-import.spec.js:32:7 should show user permissions and role" type="FAILURE">
+<![CDATA[  [chromium] › hts-import.spec.js:32:7 › HTS Data Import › should show user permissions and role ───
+
+    Error: expect.toBeVisible: Error: strict mode violation: locator('text=dokonoski@lucerneintl.com').or(locator('text=D')) resolved to 16 elements:
+        1) <div>↵          Loading ICRS SPARC...↵        </div> aka getByText('Loading ICRS SPARC...')
+        2) <p class="text-xs text-gray-300">Foreign Trade Zone</p> aka getByText('Foreign Trade Zone', { exact: true })
+        3) <span class="ml-3">Dashboard</span> aka getByText('Dashboard')
+        4) <span class="ml-3">Pre-Admissions</span> aka getByText('Pre-Admissions', { exact: true })
+        5) <span class="ml-3">Admin</span> aka getByText('Admin')
+        6) <span class="text-white text-sm font-medium">D</span> aka getByText('D', { exact: true })
+        7) <p class="text-sm font-medium text-white truncate">Demo User</p> aka getByText('Demo User', { exact: true })
+        8) <h1 class="text-3xl font-bold text-gray-900">Welcome back, Demo User</h1> aka getByText('Welcome back, Demo User')
+        9) <p class="text-gray-600 mt-1">Here's what's happening with your Foreign Trade Z…</p> aka getByText('Here\'s what\'s happening with')
+        10) <dt class="text-sm font-medium text-gray-500 truncate">Pending Pre-Admissions</dt> aka getByText('Pending Pre-Admissions')
+        ...
+
+    Call log:
+      - Expect "toBeVisible" with timeout 10000ms
+      - waiting for locator('text=dokonoski@lucerneintl.com').or(locator('text=D'))
+
+
+      35 |     
+      36 |     // Look for user info in sidebar
+    > 37 |     await expect(page.locator('text=dokonoski@lucerneintl.com').or(page.locator('text=D'))).toBeVisible();
+         |                                                                                             ^
+      38 |     
+      39 |     // Take screenshot for debugging
+      40 |     await page.screenshot({ path: 'tests/screenshots/user-sidebar.png', fullPage: true });
+        at C:\Users\DavidOkonoski\OneDrive\Documents\Integrator Consulting, LLC\App Development\ICRS_SPARC\tests\e2e\hts-import.spec.js:37:93
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\hts-import-HTS-Data-Import-ac52b-w-user-permissions-and-role-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\hts-import-HTS-Data-Import-ac52b-w-user-permissions-and-role-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|hts-import-HTS-Data-Import-ac52b-w-user-permissions-and-role-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|hts-import-HTS-Data-Import-ac52b-w-user-permissions-and-role-chromium\video.webm]]
+]]>
+</system-out>
+</testcase>
+<testcase name="HTS Data Import › should test HTS import button click and permissions" classname="hts-import.spec.js" time="26.313">
+<system-out>
+<![CDATA[Console Errors: [
+  [32m'Failed to load resource: the server responded with a status of 403 (Forbidden)'[39m,
+  [32m'HTS refresh error: Error: Admin privileges required for data refresh\n'[39m +
+    [32m'    at ApiClient.request (http://localhost:3000/static/js/bundle.js:77524:23)\n'[39m +
+    [32m'    at async HTSService.refreshData (http://localhost:3000/static/js/bundle.js:78003:24)\n'[39m +
+    [32m'    at async handleRefreshData (http://localhost:3000/static/js/bundle.js:64415:22)'[39m
+]
+Network Requests: [
+  {
+    url: [32m'http://localhost:5000/api/hts/refresh'[39m,
+    method: [32m'POST'[39m,
+    headers: {
+      [32m'sec-ch-ua-platform'[39m: [32m'"Windows"'[39m,
+      authorization: [32m'Bearer demo-token-for-testing-only-1756862072207'[39m,
+      referer: [32m'http://localhost:3000/'[39m,
+      [32m'accept-language'[39m: [32m'en-US'[39m,
+      [32m'sec-ch-ua'[39m: [32m'"Not=A?Brand";v="24", "Chromium";v="140"'[39m,
+      [32m'sec-ch-ua-mobile'[39m: [32m'?0'[39m,
+      [32m'user-agent'[39m: [32m'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.7339.16 Safari/537.36'[39m,
+      [32m'content-type'[39m: [32m'application/json'[39m
+    }
+  }
+]
+Network Responses: [
+  {
+    url: [32m'http://localhost:5000/api/hts/refresh'[39m,
+    status: [33m403[39m,
+    statusText: [32m'Forbidden'[39m
+  }
+]
+HTS Import Response: 403 Forbidden
+❌ Admin privileges required for HTS data import
+Current user does not have admin role
+]]>
+</system-out>
+</testcase>
+<testcase name="HTS Data Import › should check user role via API" classname="hts-import.spec.js" time="41.188">
+<failure message="hts-import.spec.js:120:7 should check user role via API" type="FAILURE">
+<![CDATA[  [chromium] › hts-import.spec.js:120:7 › HTS Data Import › should check user role via API ─────────
+
+    Test timeout of 30000ms exceeded while running "beforeEach" hook.
+
+       5 |
+       6 | test.describe('HTS Data Import', () => {
+    >  7 |   test.beforeEach(async ({ page }) => {
+         |        ^
+       8 |     // Navigate to login page
+       9 |     await page.goto('http://localhost:3000/login');
+      10 |     
+        at C:\Users\DavidOkonoski\OneDrive\Documents\Integrator Consulting, LLC\App Development\ICRS_SPARC\tests\e2e\hts-import.spec.js:7:8
+
+    Error: browserContext.newPage: Test timeout of 30000ms exceeded.
+]]>
+</failure>
+</testcase>
+</testsuite>
+<testsuite name="hts-import.spec.js" timestamp="2025-09-03T01:14:12.130Z" hostname="firefox" tests="4" failures="4" skipped="0" time="133.073" errors="0">
+<testcase name="HTS Data Import › should display HTS Browser page with import button" classname="hts-import.spec.js" time="24.105">
+<failure message="hts-import.spec.js:20:7 should display HTS Browser page with import button" type="FAILURE">
+<![CDATA[  [firefox] › hts-import.spec.js:20:7 › HTS Data Import › should display HTS Browser page with import button 
+
+    Error: expect.toContainText: Error: strict mode violation: locator('h1') resolved to 2 elements:
+        1) <h1 class="text-lg font-semibold text-white">SPARC</h1> aka getByText('SPARC', { exact: true })
+        2) <h1 class="text-lg font-semibold text-gray-900">ICRS SPARC</h1> aka getByText('ICRS SPARC', { exact: true })
+
+    Call log:
+      - Expect "toContainText" with timeout 10000ms
+      - waiting for locator('h1')
+
+
+      23 |     
+      24 |     // Check if page loaded properly
+    > 25 |     await expect(page.locator('h1')).toContainText('HTS Browser');
+         |                                      ^
+      26 |     await expect(page.locator('text=Complete USITC Harmonized Tariff Schedule Database')).toBeVisible();
+      27 |     
+      28 |     // Check if import button is visible
+        at C:\Users\DavidOkonoski\OneDrive\Documents\Integrator Consulting, LLC\App Development\ICRS_SPARC\tests\e2e\hts-import.spec.js:25:38
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\hts-import-HTS-Data-Import-b0969-ser-page-with-import-button-firefox\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\hts-import-HTS-Data-Import-b0969-ser-page-with-import-button-firefox\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\hts-import-HTS-Data-Import-b0969-ser-page-with-import-button-firefox\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|hts-import-HTS-Data-Import-b0969-ser-page-with-import-button-firefox\test-failed-1.png]]
+
+[[ATTACHMENT|hts-import-HTS-Data-Import-b0969-ser-page-with-import-button-firefox\video.webm]]
+
+[[ATTACHMENT|hts-import-HTS-Data-Import-b0969-ser-page-with-import-button-firefox\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="HTS Data Import › should show user permissions and role" classname="hts-import.spec.js" time="39.284">
+<failure message="hts-import.spec.js:32:7 should show user permissions and role" type="FAILURE">
+<![CDATA[  [firefox] › hts-import.spec.js:32:7 › HTS Data Import › should show user permissions and role ────
+
+    Test timeout of 30000ms exceeded while running "beforeEach" hook.
+
+       5 |
+       6 | test.describe('HTS Data Import', () => {
+    >  7 |   test.beforeEach(async ({ page }) => {
+         |        ^
+       8 |     // Navigate to login page
+       9 |     await page.goto('http://localhost:3000/login');
+      10 |     
+        at C:\Users\DavidOkonoski\OneDrive\Documents\Integrator Consulting, LLC\App Development\ICRS_SPARC\tests\e2e\hts-import.spec.js:7:8
+
+    Error: page.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('input[type="email"]')
+
+
+      10 |     
+      11 |     // Login with the provided credentials
+    > 12 |     await page.fill('input[type="email"]', 'dokonoski@lucerneintl.com');
+         |                ^
+      13 |     await page.fill('input[type="password"]', 'Winter!0!!');
+      14 |     await page.click('button[type="submit"]');
+      15 |     
+        at C:\Users\DavidOkonoski\OneDrive\Documents\Integrator Consulting, LLC\App Development\ICRS_SPARC\tests\e2e\hts-import.spec.js:12:16
+
+    attachment #1: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\hts-import-HTS-Data-Import-ac52b-w-user-permissions-and-role-firefox\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|hts-import-HTS-Data-Import-ac52b-w-user-permissions-and-role-firefox\video.webm]]
+]]>
+</system-out>
+</testcase>
+<testcase name="HTS Data Import › should test HTS import button click and permissions" classname="hts-import.spec.js" time="32.337">
+<failure message="hts-import.spec.js:43:7 should test HTS import button click and permissions" type="FAILURE">
+<![CDATA[  [firefox] › hts-import.spec.js:43:7 › HTS Data Import › should test HTS import button click and permissions 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('button:has-text("Import Latest Data")')
+        - locator resolved to <button class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">…</button>
+      - attempting click action
+        - waiting for element to be visible, enabled and stable
+        - element is visible, enabled and stable
+        - scrolling into view if needed
+        - done scrolling
+
+
+      85 |     
+      86 |     // Click the import button
+    > 87 |     await importButton.click();
+         |                        ^
+      88 |     
+      89 |     // Wait a moment for the request to complete
+      90 |     await page.waitForTimeout(3000);
+        at C:\Users\DavidOkonoski\OneDrive\Documents\Integrator Consulting, LLC\App Development\ICRS_SPARC\tests\e2e\hts-import.spec.js:87:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\hts-import-HTS-Data-Import-447ed-utton-click-and-permissions-firefox\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\hts-import-HTS-Data-Import-447ed-utton-click-and-permissions-firefox\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\hts-import-HTS-Data-Import-447ed-utton-click-and-permissions-firefox\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|hts-import-HTS-Data-Import-447ed-utton-click-and-permissions-firefox\test-failed-1.png]]
+
+[[ATTACHMENT|hts-import-HTS-Data-Import-447ed-utton-click-and-permissions-firefox\video.webm]]
+
+[[ATTACHMENT|hts-import-HTS-Data-Import-447ed-utton-click-and-permissions-firefox\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="HTS Data Import › should check user role via API" classname="hts-import.spec.js" time="37.347">
+<failure message="hts-import.spec.js:120:7 should check user role via API" type="FAILURE">
+<![CDATA[  [firefox] › hts-import.spec.js:120:7 › HTS Data Import › should check user role via API ──────────
+
+    Test timeout of 30000ms exceeded while running "beforeEach" hook.
+
+       5 |
+       6 | test.describe('HTS Data Import', () => {
+    >  7 |   test.beforeEach(async ({ page }) => {
+         |        ^
+       8 |     // Navigate to login page
+       9 |     await page.goto('http://localhost:3000/login');
+      10 |     
+        at C:\Users\DavidOkonoski\OneDrive\Documents\Integrator Consulting, LLC\App Development\ICRS_SPARC\tests\e2e\hts-import.spec.js:7:8
+
+    Error: page.goto: Test timeout of 30000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:3000/login", waiting until "load"
+
+
+       7 |   test.beforeEach(async ({ page }) => {
+       8 |     // Navigate to login page
+    >  9 |     await page.goto('http://localhost:3000/login');
+         |                ^
+      10 |     
+      11 |     // Login with the provided credentials
+      12 |     await page.fill('input[type="email"]', 'dokonoski@lucerneintl.com');
+        at C:\Users\DavidOkonoski\OneDrive\Documents\Integrator Consulting, LLC\App Development\ICRS_SPARC\tests\e2e\hts-import.spec.js:9:16
+
+    attachment #1: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\hts-import-HTS-Data-Import-should-check-user-role-via-API-firefox\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|hts-import-HTS-Data-Import-should-check-user-role-via-API-firefox\video.webm]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="hts-import.spec.js" timestamp="2025-09-03T01:14:12.130Z" hostname="webkit" tests="4" failures="2" skipped="0" time="50.086" errors="0">
+<testcase name="HTS Data Import › should display HTS Browser page with import button" classname="hts-import.spec.js" time="11.788">
+<failure message="hts-import.spec.js:20:7 should display HTS Browser page with import button" type="FAILURE">
+<![CDATA[  [webkit] › hts-import.spec.js:20:7 › HTS Data Import › should display HTS Browser page with import button 
+
+    Error: expect.toContainText: Error: strict mode violation: locator('h1') resolved to 3 elements:
+        1) <h1 class="text-lg font-semibold text-white">SPARC</h1> aka getByText('SPARC', { exact: true })
+        2) <h1 class="text-lg font-semibold text-gray-900">ICRS SPARC</h1> aka getByText('ICRS SPARC', { exact: true })
+        3) <h1 class="text-3xl font-bold text-gray-900">HTS Browser</h1> aka locator('h1').filter({ hasText: 'HTS Browser' })
+
+    Call log:
+      - Expect "toContainText" with timeout 10000ms
+      - waiting for locator('h1')
+
+
+      23 |     
+      24 |     // Check if page loaded properly
+    > 25 |     await expect(page.locator('h1')).toContainText('HTS Browser');
+         |                                      ^
+      26 |     await expect(page.locator('text=Complete USITC Harmonized Tariff Schedule Database')).toBeVisible();
+      27 |     
+      28 |     // Check if import button is visible
+        at C:\Users\DavidOkonoski\OneDrive\Documents\Integrator Consulting, LLC\App Development\ICRS_SPARC\tests\e2e\hts-import.spec.js:25:38
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\hts-import-HTS-Data-Import-b0969-ser-page-with-import-button-webkit\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\hts-import-HTS-Data-Import-b0969-ser-page-with-import-button-webkit\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\hts-import-HTS-Data-Import-b0969-ser-page-with-import-button-webkit\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|hts-import-HTS-Data-Import-b0969-ser-page-with-import-button-webkit\test-failed-1.png]]
+
+[[ATTACHMENT|hts-import-HTS-Data-Import-b0969-ser-page-with-import-button-webkit\video.webm]]
+
+[[ATTACHMENT|hts-import-HTS-Data-Import-b0969-ser-page-with-import-button-webkit\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="HTS Data Import › should show user permissions and role" classname="hts-import.spec.js" time="8.277">
+<failure message="hts-import.spec.js:32:7 should show user permissions and role" type="FAILURE">
+<![CDATA[  [webkit] › hts-import.spec.js:32:7 › HTS Data Import › should show user permissions and role ─────
+
+    Error: expect.toBeVisible: Error: strict mode violation: locator('text=dokonoski@lucerneintl.com').or(locator('text=D')) resolved to 2 elements:
+        1) <div>↵          Loading ICRS SPARC...↵        </div> aka getByText('Loading ICRS SPARC...')
+        2) <span class="text-sm text-blue-600">Loading...</span> aka getByText('Loading...')
+
+    Call log:
+      - Expect "toBeVisible" with timeout 10000ms
+      - waiting for locator('text=dokonoski@lucerneintl.com').or(locator('text=D'))
+
+
+      35 |     
+      36 |     // Look for user info in sidebar
+    > 37 |     await expect(page.locator('text=dokonoski@lucerneintl.com').or(page.locator('text=D'))).toBeVisible();
+         |                                                                                             ^
+      38 |     
+      39 |     // Take screenshot for debugging
+      40 |     await page.screenshot({ path: 'tests/screenshots/user-sidebar.png', fullPage: true });
+        at C:\Users\DavidOkonoski\OneDrive\Documents\Integrator Consulting, LLC\App Development\ICRS_SPARC\tests\e2e\hts-import.spec.js:37:93
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\hts-import-HTS-Data-Import-ac52b-w-user-permissions-and-role-webkit\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\hts-import-HTS-Data-Import-ac52b-w-user-permissions-and-role-webkit\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\hts-import-HTS-Data-Import-ac52b-w-user-permissions-and-role-webkit\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|hts-import-HTS-Data-Import-ac52b-w-user-permissions-and-role-webkit\test-failed-1.png]]
+
+[[ATTACHMENT|hts-import-HTS-Data-Import-ac52b-w-user-permissions-and-role-webkit\video.webm]]
+
+[[ATTACHMENT|hts-import-HTS-Data-Import-ac52b-w-user-permissions-and-role-webkit\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="HTS Data Import › should test HTS import button click and permissions" classname="hts-import.spec.js" time="18.494">
+<system-out>
+<![CDATA[Console Errors: [
+  [32m'Failed to load resource: the server responded with a status of 403 (Forbidden)'[39m,
+  [32m'HTS refresh error: Error: Admin privileges required for data refresh'[39m
+]
+Network Requests: [
+  {
+    url: [32m'http://localhost:5000/api/hts/refresh'[39m,
+    method: [32m'POST'[39m,
+    headers: {
+      [32m'content-type'[39m: [32m'application/json'[39m,
+      authorization: [32m'Bearer demo-token-for-testing-only-1756862129457'[39m,
+      origin: [32m'http://localhost:3000'[39m,
+      referer: [32m'http://localhost:3000/'[39m,
+      accept: [32m'*/*'[39m,
+      [32m'sec-fetch-dest'[39m: [32m'empty'[39m,
+      [32m'sec-fetch-mode'[39m: [32m'cors'[39m,
+      [32m'sec-fetch-site'[39m: [32m'same-site'[39m,
+      [32m'user-agent'[39m: [32m'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15'[39m,
+      [32m'accept-language'[39m: [32m'en-US'[39m
+    }
+  }
+]
+Network Responses: [
+  {
+    url: [32m'http://localhost:5000/api/hts/refresh'[39m,
+    status: [33m403[39m,
+    statusText: [32m'Forbidden'[39m
+  }
+]
+HTS Import Response: 403 Forbidden
+❌ Admin privileges required for HTS data import
+Current user does not have admin role
+]]>
+</system-out>
+</testcase>
+<testcase name="HTS Data Import › should check user role via API" classname="hts-import.spec.js" time="11.527">
+<system-out>
+<![CDATA[Detected user role: [1mnull[22m
+LocalStorage data: {
+  icrs_user: {
+    id: [32m'550e8400-e29b-41d4-a716-446655440000'[39m,
+    email: [32m'dokonoski@lucerneintl.com'[39m,
+    user_metadata: { full_name: [32m'Demo User'[39m, role: [32m'admin'[39m }
+  },
+  icrs_dark_mode: [33mfalse[39m,
+  icrs_app_settings: {
+    dateFormat: [32m'MM/dd/yyyy'[39m,
+    currency: [32m'USD'[39m,
+    timezone: [32m'America/New_York'[39m,
+    itemsPerPage: [33m25[39m
+  },
+  icrs_sidebar_collapsed: [33mfalse[39m,
+  icrs_auth_token: [32m'demo-token-for-testing-only-1756862132092'[39m
+}
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="hts-import.spec.js" timestamp="2025-09-03T01:14:12.130Z" hostname="Mobile Chrome" tests="4" failures="3" skipped="0" time="52.311" errors="0">
+<testcase name="HTS Data Import › should display HTS Browser page with import button" classname="hts-import.spec.js" time="8.219">
+<failure message="hts-import.spec.js:20:7 should display HTS Browser page with import button" type="FAILURE">
+<![CDATA[  [Mobile Chrome] › hts-import.spec.js:20:7 › HTS Data Import › should display HTS Browser page with import button 
+
+    Error: expect.toContainText: Error: strict mode violation: locator('h1') resolved to 3 elements:
+        1) <h1 class="text-lg font-semibold text-white">SPARC</h1> aka getByText('SPARC', { exact: true })
+        2) <h1 class="text-lg font-semibold text-gray-900">ICRS SPARC</h1> aka getByText('ICRS SPARC', { exact: true })
+        3) <h1 class="text-3xl font-bold text-gray-900">HTS Browser</h1> aka locator('h1').filter({ hasText: 'HTS Browser' })
+
+    Call log:
+      - Expect "toContainText" with timeout 10000ms
+      - waiting for locator('h1')
+
+
+      23 |     
+      24 |     // Check if page loaded properly
+    > 25 |     await expect(page.locator('h1')).toContainText('HTS Browser');
+         |                                      ^
+      26 |     await expect(page.locator('text=Complete USITC Harmonized Tariff Schedule Database')).toBeVisible();
+      27 |     
+      28 |     // Check if import button is visible
+        at C:\Users\DavidOkonoski\OneDrive\Documents\Integrator Consulting, LLC\App Development\ICRS_SPARC\tests\e2e\hts-import.spec.js:25:38
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\hts-import-HTS-Data-Import-b0969-ser-page-with-import-button-Mobile-Chrome\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\hts-import-HTS-Data-Import-b0969-ser-page-with-import-button-Mobile-Chrome\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\hts-import-HTS-Data-Import-b0969-ser-page-with-import-button-Mobile-Chrome\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|hts-import-HTS-Data-Import-b0969-ser-page-with-import-button-Mobile-Chrome\test-failed-1.png]]
+
+[[ATTACHMENT|hts-import-HTS-Data-Import-b0969-ser-page-with-import-button-Mobile-Chrome\video.webm]]
+
+[[ATTACHMENT|hts-import-HTS-Data-Import-b0969-ser-page-with-import-button-Mobile-Chrome\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="HTS Data Import › should show user permissions and role" classname="hts-import.spec.js" time="7.848">
+<failure message="hts-import.spec.js:32:7 should show user permissions and role" type="FAILURE">
+<![CDATA[  [Mobile Chrome] › hts-import.spec.js:32:7 › HTS Data Import › should show user permissions and role 
+
+    Error: expect.toBeVisible: Error: strict mode violation: locator('text=dokonoski@lucerneintl.com').or(locator('text=D')) resolved to 11 elements:
+        1) <div>↵          Loading ICRS SPARC...↵        </div> aka getByText('Loading ICRS SPARC...')
+        2) <p class="text-xs text-gray-300">Foreign Trade Zone</p> aka getByText('Foreign Trade Zone', { exact: true })
+        3) <span class="ml-3">Dashboard</span> aka getByText('Dashboard')
+        4) <span class="ml-3">Pre-Admissions</span> aka getByText('Pre-Admissions', { exact: true })
+        5) <span class="ml-3">Admin</span> aka getByText('Admin')
+        6) <span class="text-white text-sm font-medium">D</span> aka getByText('D', { exact: true })
+        7) <p class="text-sm font-medium text-white truncate">Demo User</p> aka getByText('Demo User', { exact: true })
+        8) <h1 class="text-3xl font-bold text-gray-900">Welcome back, Demo User</h1> aka getByText('Welcome back, Demo User')
+        9) <p class="text-gray-600 mt-1">Here's what's happening with your Foreign Trade Z…</p> aka getByText('Here\'s what\'s happening with')
+        10) <dt class="text-sm font-medium text-gray-500 truncate">Pending Pre-Admissions</dt> aka getByText('Pending Pre-Admissions')
+        ...
+
+    Call log:
+      - Expect "toBeVisible" with timeout 10000ms
+      - waiting for locator('text=dokonoski@lucerneintl.com').or(locator('text=D'))
+
+
+      35 |     
+      36 |     // Look for user info in sidebar
+    > 37 |     await expect(page.locator('text=dokonoski@lucerneintl.com').or(page.locator('text=D'))).toBeVisible();
+         |                                                                                             ^
+      38 |     
+      39 |     // Take screenshot for debugging
+      40 |     await page.screenshot({ path: 'tests/screenshots/user-sidebar.png', fullPage: true });
+        at C:\Users\DavidOkonoski\OneDrive\Documents\Integrator Consulting, LLC\App Development\ICRS_SPARC\tests\e2e\hts-import.spec.js:37:93
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\hts-import-HTS-Data-Import-ac52b-w-user-permissions-and-role-Mobile-Chrome\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\hts-import-HTS-Data-Import-ac52b-w-user-permissions-and-role-Mobile-Chrome\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|hts-import-HTS-Data-Import-ac52b-w-user-permissions-and-role-Mobile-Chrome\test-failed-1.png]]
+
+[[ATTACHMENT|hts-import-HTS-Data-Import-ac52b-w-user-permissions-and-role-Mobile-Chrome\video.webm]]
+]]>
+</system-out>
+</testcase>
+<testcase name="HTS Data Import › should test HTS import button click and permissions" classname="hts-import.spec.js" time="8.289">
+<system-out>
+<![CDATA[Console Errors: [
+  [32m'Failed to load resource: the server responded with a status of 403 (Forbidden)'[39m,
+  [32m'HTS refresh error: Error: Admin privileges required for data refresh\n'[39m +
+    [32m'    at ApiClient.request (http://localhost:3000/static/js/bundle.js:77524:23)\n'[39m +
+    [32m'    at async HTSService.refreshData (http://localhost:3000/static/js/bundle.js:78003:24)\n'[39m +
+    [32m'    at async handleRefreshData (http://localhost:3000/static/js/bundle.js:64415:22)'[39m
+]
+Network Requests: [
+  {
+    url: [32m'http://localhost:5000/api/hts/refresh'[39m,
+    method: [32m'POST'[39m,
+    headers: {
+      [32m'sec-ch-ua-platform'[39m: [32m'"Android"'[39m,
+      authorization: [32m'Bearer demo-token-for-testing-only-1756862145301'[39m,
+      referer: [32m'http://localhost:3000/'[39m,
+      [32m'accept-language'[39m: [32m'en-US'[39m,
+      [32m'sec-ch-ua'[39m: [32m'"Not=A?Brand";v="24", "Chromium";v="140"'[39m,
+      [32m'sec-ch-ua-mobile'[39m: [32m'?1'[39m,
+      [32m'user-agent'[39m: [32m'Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.7339.16 Mobile Safari/537.36'[39m,
+      [32m'content-type'[39m: [32m'application/json'[39m
+    }
+  }
+]
+Network Responses: [
+  {
+    url: [32m'http://localhost:5000/api/hts/refresh'[39m,
+    status: [33m403[39m,
+    statusText: [32m'Forbidden'[39m
+  }
+]
+HTS Import Response: 403 Forbidden
+❌ Admin privileges required for HTS data import
+Current user does not have admin role
+]]>
+</system-out>
+</testcase>
+<testcase name="HTS Data Import › should check user role via API" classname="hts-import.spec.js" time="27.955">
+<failure message="hts-import.spec.js:120:7 should check user role via API" type="FAILURE">
+<![CDATA[  [Mobile Chrome] › hts-import.spec.js:120:7 › HTS Data Import › should check user role via API ────
+
+    Error: page.goto: net::ERR_ABORTED at http://localhost:3000/login
+    Call log:
+      - navigating to "http://localhost:3000/login", waiting until "load"
+
+
+       7 |   test.beforeEach(async ({ page }) => {
+       8 |     // Navigate to login page
+    >  9 |     await page.goto('http://localhost:3000/login');
+         |                ^
+      10 |     
+      11 |     // Login with the provided credentials
+      12 |     await page.fill('input[type="email"]', 'dokonoski@lucerneintl.com');
+        at C:\Users\DavidOkonoski\OneDrive\Documents\Integrator Consulting, LLC\App Development\ICRS_SPARC\tests\e2e\hts-import.spec.js:9:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\hts-import-HTS-Data-Import-should-check-user-role-via-API-Mobile-Chrome\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\hts-import-HTS-Data-Import-should-check-user-role-via-API-Mobile-Chrome\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|hts-import-HTS-Data-Import-should-check-user-role-via-API-Mobile-Chrome\test-failed-1.png]]
+
+[[ATTACHMENT|hts-import-HTS-Data-Import-should-check-user-role-via-API-Mobile-Chrome\video.webm]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="hts-import.spec.js" timestamp="2025-09-03T01:14:12.130Z" hostname="Mobile Safari" tests="4" failures="4" skipped="0" time="0" errors="0">
+<testcase name="HTS Data Import › should display HTS Browser page with import button" classname="hts-import.spec.js" time="0">
+<failure message="hts-import.spec.js:20:7 should display HTS Browser page with import button" type="FAILURE">
+<![CDATA[  [Mobile Safari] › hts-import.spec.js:20:7 › HTS Data Import › should display HTS Browser page with import button 
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+<testcase name="HTS Data Import › should show user permissions and role" classname="hts-import.spec.js" time="0">
+<failure message="hts-import.spec.js:32:7 should show user permissions and role" type="FAILURE">
+<![CDATA[  [Mobile Safari] › hts-import.spec.js:32:7 › HTS Data Import › should show user permissions and role 
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+<testcase name="HTS Data Import › should test HTS import button click and permissions" classname="hts-import.spec.js" time="0">
+<failure message="hts-import.spec.js:43:7 should test HTS import button click and permissions" type="FAILURE">
+<![CDATA[  [Mobile Safari] › hts-import.spec.js:43:7 › HTS Data Import › should test HTS import button click and permissions 
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+<testcase name="HTS Data Import › should check user role via API" classname="hts-import.spec.js" time="0">
+<failure message="hts-import.spec.js:120:7 should check user role via API" type="FAILURE">
+<![CDATA[  [Mobile Safari] › hts-import.spec.js:120:7 › HTS Data Import › should check user role via API ────
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+</testsuite>
+<testsuite name="hts-import.spec.js" timestamp="2025-09-03T01:14:12.130Z" hostname="Microsoft Edge" tests="4" failures="4" skipped="0" time="0" errors="0">
+<testcase name="HTS Data Import › should display HTS Browser page with import button" classname="hts-import.spec.js" time="0">
+<failure message="hts-import.spec.js:20:7 should display HTS Browser page with import button" type="FAILURE">
+<![CDATA[  [Microsoft Edge] › hts-import.spec.js:20:7 › HTS Data Import › should display HTS Browser page with import button 
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+<testcase name="HTS Data Import › should show user permissions and role" classname="hts-import.spec.js" time="0">
+<failure message="hts-import.spec.js:32:7 should show user permissions and role" type="FAILURE">
+<![CDATA[  [Microsoft Edge] › hts-import.spec.js:32:7 › HTS Data Import › should show user permissions and role 
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+<testcase name="HTS Data Import › should test HTS import button click and permissions" classname="hts-import.spec.js" time="0">
+<failure message="hts-import.spec.js:43:7 should test HTS import button click and permissions" type="FAILURE">
+<![CDATA[  [Microsoft Edge] › hts-import.spec.js:43:7 › HTS Data Import › should test HTS import button click and permissions 
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+<testcase name="HTS Data Import › should check user role via API" classname="hts-import.spec.js" time="0">
+<failure message="hts-import.spec.js:120:7 should check user role via API" type="FAILURE">
+<![CDATA[  [Microsoft Edge] › hts-import.spec.js:120:7 › HTS Data Import › should check user role via API ───
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+</testsuite>
+<testsuite name="hts-import.spec.js" timestamp="2025-09-03T01:14:12.130Z" hostname="Google Chrome" tests="4" failures="4" skipped="0" time="0" errors="0">
+<testcase name="HTS Data Import › should display HTS Browser page with import button" classname="hts-import.spec.js" time="0">
+<failure message="hts-import.spec.js:20:7 should display HTS Browser page with import button" type="FAILURE">
+<![CDATA[  [Google Chrome] › hts-import.spec.js:20:7 › HTS Data Import › should display HTS Browser page with import button 
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+<testcase name="HTS Data Import › should show user permissions and role" classname="hts-import.spec.js" time="0">
+<failure message="hts-import.spec.js:32:7 should show user permissions and role" type="FAILURE">
+<![CDATA[  [Google Chrome] › hts-import.spec.js:32:7 › HTS Data Import › should show user permissions and role 
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+<testcase name="HTS Data Import › should test HTS import button click and permissions" classname="hts-import.spec.js" time="0">
+<failure message="hts-import.spec.js:43:7 should test HTS import button click and permissions" type="FAILURE">
+<![CDATA[  [Google Chrome] › hts-import.spec.js:43:7 › HTS Data Import › should test HTS import button click and permissions 
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+<testcase name="HTS Data Import › should check user role via API" classname="hts-import.spec.js" time="0">
+<failure message="hts-import.spec.js:120:7 should check user role via API" type="FAILURE">
+<![CDATA[  [Google Chrome] › hts-import.spec.js:120:7 › HTS Data Import › should check user role via API ────
+
+    Error: worker process exited unexpectedly (code=3221225794, signal=null)
+]]>
+</failure>
+</testcase>
+</testsuite>
+</testsuites>

@@ -1,0 +1,96 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - generic [ref=e9]: ICRS
+          - generic [ref=e10]:
+            - heading "SPARC" [level=1] [ref=e11]
+            - paragraph [ref=e12]: Foreign Trade Zone
+        - button [ref=e13] [cursor=pointer]:
+          - img [ref=e14] [cursor=pointer]
+      - navigation [ref=e16]:
+        - link "Dashboard" [ref=e17] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e19] [cursor=pointer]
+          - generic [ref=e22] [cursor=pointer]: Dashboard
+        - link "Inventory" [ref=e23] [cursor=pointer]:
+          - /url: /inventory
+          - img [ref=e25] [cursor=pointer]
+          - generic [ref=e27] [cursor=pointer]: Inventory
+        - link "Pre-Admissions" [ref=e28] [cursor=pointer]:
+          - /url: /preadmissions
+          - img [ref=e30] [cursor=pointer]
+          - generic [ref=e32] [cursor=pointer]: Pre-Admissions
+        - link "Pre-Shipments" [ref=e33] [cursor=pointer]:
+          - /url: /preshipments
+          - img [ref=e35] [cursor=pointer]
+          - generic [ref=e37] [cursor=pointer]: Pre-Shipments
+        - link "Receiving" [ref=e38] [cursor=pointer]:
+          - /url: /receiving
+          - img [ref=e40] [cursor=pointer]
+          - generic [ref=e42] [cursor=pointer]: Receiving
+        - link "Shipping" [ref=e43] [cursor=pointer]:
+          - /url: /shipping
+          - img [ref=e45] [cursor=pointer]
+          - generic [ref=e47] [cursor=pointer]: Shipping
+        - link "Parts" [ref=e48] [cursor=pointer]:
+          - /url: /parts
+          - img [ref=e50] [cursor=pointer]
+          - generic [ref=e52] [cursor=pointer]: Parts
+        - link "HTS Browser" [ref=e53] [cursor=pointer]:
+          - /url: /hts-browser
+          - img [ref=e55] [cursor=pointer]
+          - generic [ref=e57] [cursor=pointer]: HTS Browser
+        - link "Entry Summary Groups" [ref=e58] [cursor=pointer]:
+          - /url: /entry-summary-groups
+          - img [ref=e60] [cursor=pointer]
+          - generic [ref=e62] [cursor=pointer]: Entry Summary Groups
+        - link "Reports" [ref=e63] [cursor=pointer]:
+          - /url: /reports
+          - img [ref=e65] [cursor=pointer]
+          - generic [ref=e67] [cursor=pointer]: Reports
+        - link "Admin" [ref=e68] [cursor=pointer]:
+          - /url: /admin
+          - img [ref=e70] [cursor=pointer]
+          - generic [ref=e73] [cursor=pointer]: Admin
+      - generic [ref=e76]:
+        - generic [ref=e77]:
+          - generic [ref=e80]: D
+          - generic [ref=e81]:
+            - paragraph [ref=e82]: Demo User
+            - paragraph [ref=e83]: User
+        - button "Sign out" [ref=e84] [cursor=pointer]:
+          - img [ref=e85] [cursor=pointer]
+          - generic [ref=e87] [cursor=pointer]: Sign out
+    - main [ref=e89]:
+      - generic [ref=e90]:
+        - generic [ref=e92]:
+          - generic [ref=e93]:
+            - heading "HTS Browser" [level=1] [ref=e94]
+            - paragraph [ref=e95]: Complete USITC Harmonized Tariff Schedule Database
+          - button "Import Latest Data" [ref=e97] [cursor=pointer]:
+            - img [ref=e98] [cursor=pointer]
+            - text: Import Latest Data
+        - navigation [ref=e102]:
+          - button "Search & Browse" [ref=e103] [cursor=pointer]
+        - generic [ref=e104]:
+          - generic [ref=e105]:
+            - generic [ref=e106]:
+              - textbox "Search by description (e.g., \"electronic circuits\")" [ref=e108]
+              - generic [ref=e110]:
+                - button "Description" [ref=e111] [cursor=pointer]
+                - button "HTS Code" [ref=e112] [cursor=pointer]
+              - combobox [ref=e114]:
+                - option "Select Country of Origin (Optional)" [selected]
+            - paragraph [ref=e116]: 💡 Select a country of origin to see applicable duty rates and trade agreement benefits.
+          - generic [ref=e117]:
+            - heading "HTS Codes" [level=3] [ref=e120]
+            - generic [ref=e122]: Enter at least 2 characters to search HTS codes
+  - generic:
+    - status [ref=e128]: HTS service initialized successfully
+    - status [ref=e134]: HTS service initialized successfully
+```

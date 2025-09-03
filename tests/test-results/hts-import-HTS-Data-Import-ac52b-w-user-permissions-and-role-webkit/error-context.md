@@ -1,0 +1,116 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e9]: ICRS
+        - generic [ref=e10]:
+          - heading "SPARC" [level=1] [ref=e11]
+          - paragraph [ref=e12]: Foreign Trade Zone
+      - button [ref=e13] [cursor=pointer]:
+        - img [ref=e14] [cursor=pointer]
+    - navigation [ref=e16]:
+      - link "Dashboard" [ref=e17]:
+        - /url: /dashboard
+        - img [ref=e19]
+        - generic [ref=e22]: Dashboard
+      - link "Inventory" [ref=e23]:
+        - /url: /inventory
+        - img [ref=e25]
+        - generic [ref=e27]: Inventory
+      - link "Pre-Admissions" [ref=e28]:
+        - /url: /preadmissions
+        - img [ref=e30]
+        - generic [ref=e32]: Pre-Admissions
+      - link "Pre-Shipments" [ref=e33]:
+        - /url: /preshipments
+        - img [ref=e35]
+        - generic [ref=e37]: Pre-Shipments
+      - link "Receiving" [ref=e38]:
+        - /url: /receiving
+        - img [ref=e40]
+        - generic [ref=e42]: Receiving
+      - link "Shipping" [ref=e43]:
+        - /url: /shipping
+        - img [ref=e45]
+        - generic [ref=e47]: Shipping
+      - link "Parts" [ref=e48]:
+        - /url: /parts
+        - img [ref=e50]
+        - generic [ref=e52]: Parts
+      - link "HTS Browser" [ref=e53]:
+        - /url: /hts-browser
+        - img [ref=e55]
+        - generic [ref=e57]: HTS Browser
+      - link "Entry Summary Groups" [ref=e58]:
+        - /url: /entry-summary-groups
+        - img [ref=e60]
+        - generic [ref=e62]: Entry Summary Groups
+      - link "Reports" [ref=e63]:
+        - /url: /reports
+        - img [ref=e65]
+        - generic [ref=e67]: Reports
+      - link "Admin" [ref=e68]:
+        - /url: /admin
+        - img [ref=e70]
+        - generic [ref=e73]: Admin
+    - generic [ref=e76]:
+      - generic [ref=e77]:
+        - generic [ref=e80]: D
+        - generic [ref=e81]:
+          - paragraph [ref=e82]: Demo User
+          - paragraph [ref=e83]: User
+      - button "Sign out" [ref=e84] [cursor=pointer]:
+        - img [ref=e85] [cursor=pointer]
+        - generic [ref=e87] [cursor=pointer]: Sign out
+  - main [ref=e89]:
+    - generic [ref=e90]:
+      - generic [ref=e91]:
+        - heading "Welcome back, Demo User" [level=1] [ref=e92]
+        - paragraph [ref=e93]: Here's what's happening with your Foreign Trade Zone operations today.
+      - generic [ref=e94]:
+        - generic [ref=e97]:
+          - img [ref=e101]
+          - generic [ref=e104]:
+            - term [ref=e105]: Total Inventory Value
+            - definition [ref=e106]
+        - generic [ref=e112]:
+          - img [ref=e116]
+          - generic [ref=e119]:
+            - term [ref=e120]: Active Lots
+            - definition [ref=e121]
+        - generic [ref=e127]:
+          - img [ref=e131]
+          - generic [ref=e134]:
+            - term [ref=e135]: Pending Pre-Admissions
+            - definition [ref=e136]
+        - generic [ref=e142]:
+          - img [ref=e146]
+          - generic [ref=e149]:
+            - term [ref=e150]: Monthly Transactions
+            - definition [ref=e151]
+      - generic [ref=e155]:
+        - heading "Recent Activity" [level=3] [ref=e158]
+        - heading "Inventory Summary" [level=3] [ref=e169]
+      - generic [ref=e178]:
+        - heading "Quick Actions" [level=3] [ref=e180]
+        - generic [ref=e182]:
+          - link "View Inventory" [ref=e183]:
+            - /url: /inventory
+            - img [ref=e185]
+            - generic [ref=e187]: View Inventory
+          - link "New Pre-Admission" [ref=e188]:
+            - /url: /preadmissions
+            - img [ref=e190]
+            - generic [ref=e192]: New Pre-Admission
+          - link "Manage Parts" [ref=e193]:
+            - /url: /parts
+            - img [ref=e195]
+            - generic [ref=e197]: Manage Parts
+          - link "View Reports" [ref=e198]:
+            - /url: /reports
+            - img [ref=e200]
+            - generic [ref=e202]: View Reports
+```

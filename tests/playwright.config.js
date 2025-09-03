@@ -21,7 +21,7 @@ export default defineConfig({
   
   // Reporter to use
   reporter: [
-    ['html', { outputFolder: 'test-results/playwright-report' }],
+    ['html', { outputFolder: 'playwright-report' }],
     ['junit', { outputFile: 'test-results/junit.xml' }],
     ['line']
   ],
@@ -100,26 +100,27 @@ export default defineConfig({
   ],
   
   // Global setup and teardown
-  globalSetup: require.resolve('./setup/global-setup.js'),
-  globalTeardown: require.resolve('./setup/global-teardown.js'),
+  // globalSetup: require.resolve('./setup/global-setup.js'),
+  // globalTeardown: require.resolve('./setup/global-teardown.js'),
   
   // Run your local dev server before starting the tests
-  webServer: [
-    {
-      command: 'npm run dev',
-      port: 3000,
-      cwd: '../src/frontend',
-      reuseExistingServer: !process.env.CI,
-      timeout: 120000,
-    },
-    {
-      command: 'npm run dev',
-      port: 5000,
-      cwd: '../src/backend',
-      reuseExistingServer: !process.env.CI,
-      timeout: 120000,
-    }
-  ],
+  // Note: Servers should be started manually for testing
+  // webServer: [
+  //   {
+  //     command: 'npm run frontend:start',
+  //     port: 3000,
+  //     cwd: '..',
+  //     reuseExistingServer: !process.env.CI,
+  //     timeout: 120000,
+  //   },
+  //   {
+  //     command: 'npm run dev',
+  //     port: 5000,
+  //     cwd: '..',
+  //     reuseExistingServer: !process.env.CI,
+  //     timeout: 120000,
+  //   }
+  // ],
   
   // Test timeout
   timeout: 30000,
