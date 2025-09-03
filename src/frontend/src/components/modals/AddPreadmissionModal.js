@@ -17,33 +17,51 @@ const AddPreadmissionModal = ({
   const queryClient = useQueryClient();
   
   const [formData, setFormData] = useState({
-    // Basic identification
+    // Basic identification (aligned with spreadsheet UID)
     admission_id: preadmission?.admission_id || '',
-    e214: preadmission?.e214 || '',
     customer_id: preadmission?.customer_id || '',
+    zone_status: preadmission?.zone_status || '',
+    status: preadmission?.status || 'Pending',
+    e214: preadmission?.e214 || '',
     
-    // Transport & Date Information
-    conveyance_name: preadmission?.conveyance_name || '',
-    export_date: preadmission?.export_date || '',
-    import_date: preadmission?.import_date || '',
-    expected_arrival: preadmission?.expected_arrival || '',
+    // Supplier and shipment identification (from spreadsheet Supplier2, Year, Shipment/Lot ID)
+    primary_supplier_name: preadmission?.primary_supplier_name || '',
+    year: preadmission?.year || new Date().getFullYear(),
+    shipment_lot_id: preadmission?.shipment_lot_id || '',
+    
+    // Transport & BOL Information (aligned with spreadsheet BOL fields)
     bol: preadmission?.bol || '',
+    bol_date: preadmission?.bol_date || '',
+    container_number: preadmission?.container_number || '',
+    seal_number: preadmission?.seal_number || '',
+    conveyance_name: preadmission?.conveyance_name || '',
+    
+    // Date Information (aligned with spreadsheet date columns)
+    import_date: preadmission?.import_date || '', // FTZ Admission Date
+    export_date: preadmission?.export_date || '',
+    luc_ship_date: preadmission?.luc_ship_date || '', // LUC Ship Date
+    expected_arrival: preadmission?.expected_arrival || '',
+    freight_invoice_date: preadmission?.freight_invoice_date || '',
+    
+    // Financial Information (aligned with spreadsheet Value/Bond/Tariff columns)
+    total_value: preadmission?.total_value || '',
+    bond_amount: preadmission?.bond_amount || '',
+    total_charges: preadmission?.total_charges || '',
+    ship_invoice_number: preadmission?.ship_invoice_number || '',
+    
+    // Customs and compliance
     uscbp_master_billing: preadmission?.uscbp_master_billing || '',
     
-    // Port & In-Bond Information
+    // Port & In-Bond Information (keep for compatibility)
     foreign_port_of_lading: preadmission?.foreign_port_of_lading || '',
     foreign_port_of_unlading: preadmission?.foreign_port_of_unlading || '',
     port_of_unlading: preadmission?.port_of_unlading || '',
     it_carrier: preadmission?.it_carrier || '',
-    container_number: preadmission?.container_number || '',
     it_date: preadmission?.it_date || '',
     it_port: preadmission?.it_port || '',
     
-    // Status & Values
-    zone_status: preadmission?.zone_status || '',
-    total_value: preadmission?.total_value || '',
-    total_charges: preadmission?.total_charges || '',
-    status: preadmission?.status || 'Pending'
+    // Notes (aligned with spreadsheet Note column)
+    notes: preadmission?.notes || ''
   });
 
   const [items, setItems] = useState(
@@ -197,10 +215,22 @@ const AddPreadmissionModal = ({
       newErrors.zone_status = 'Zone status is required';
     }
     
+    // Year validation
+    if (formData.year && (!Number.isInteger(parseInt(formData.year)) || parseInt(formData.year) < 2020 || parseInt(formData.year) > 2030)) {
+      newErrors.year = 'Year must be between 2020 and 2030';
+    }
+    
     // Date validation
     if (formData.export_date && formData.import_date) {
       if (new Date(formData.export_date) > new Date(formData.import_date)) {
         newErrors.import_date = 'Import date must be after export date';
+      }
+    }
+    
+    // BOL date vs FTZ admission date validation
+    if (formData.bol_date && formData.import_date) {
+      if (new Date(formData.bol_date) > new Date(formData.import_date)) {
+        newErrors.import_date = 'BOL Date cannot be after FTZ Admission Date';
       }
     }
     
@@ -219,13 +249,12 @@ const AddPreadmissionModal = ({
     }
     
     // Numeric validation
-    if (formData.total_value && isNaN(parseFloat(formData.total_value))) {
-      newErrors.total_value = 'Total value must be a valid number';
-    }
-    
-    if (formData.total_charges && isNaN(parseFloat(formData.total_charges))) {
-      newErrors.total_charges = 'Total charges must be a valid number';
-    }
+    const numericFields = ['total_value', 'bond_amount', 'total_charges'];
+    numericFields.forEach(field => {
+      if (formData[field] && isNaN(parseFloat(formData[field]))) {
+        newErrors[field] = `${field.replace('_', ' ')} must be a valid number`;
+      }
+    });
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -238,11 +267,13 @@ const AddPreadmissionModal = ({
       return;
     }
     
-    // Prepare submission data
+    // Prepare submission data (aligned with new spreadsheet fields)
     const submissionData = {
       ...formData,
       customer_id: parseInt(formData.customer_id),
+      year: parseInt(formData.year) || null,
       total_value: parseFloat(formData.total_value) || 0,
+      bond_amount: parseFloat(formData.bond_amount) || 0,
       total_charges: parseFloat(formData.total_charges) || 0,
       items: items.map(item => ({
         ...item,
@@ -260,28 +291,38 @@ const AddPreadmissionModal = ({
 
   const handleClose = () => {
     if (!preadmissionMutation.isPending) {
-      // Reset form
+      // Reset form (aligned with new spreadsheet fields)
       setFormData({
         admission_id: '',
-        e214: '',
         customer_id: '',
-        conveyance_name: '',
-        export_date: '',
-        import_date: '',
-        expected_arrival: '',
+        zone_status: '',
+        status: 'Pending',
+        e214: '',
+        primary_supplier_name: '',
+        year: new Date().getFullYear(),
+        shipment_lot_id: '',
         bol: '',
+        bol_date: '',
+        container_number: '',
+        seal_number: '',
+        conveyance_name: '',
+        import_date: '',
+        export_date: '',
+        luc_ship_date: '',
+        expected_arrival: '',
+        freight_invoice_date: '',
+        total_value: '',
+        bond_amount: '',
+        total_charges: '',
+        ship_invoice_number: '',
         uscbp_master_billing: '',
         foreign_port_of_lading: '',
         foreign_port_of_unlading: '',
         port_of_unlading: '',
         it_carrier: '',
-        container_number: '',
         it_date: '',
         it_port: '',
-        zone_status: '',
-        total_value: '',
-        total_charges: '',
-        status: 'Pending'
+        notes: ''
       });
       setItems([{
         part_id: '',
@@ -334,7 +375,7 @@ const AddPreadmissionModal = ({
       preventCloseOnOverlay={preadmissionMutation.isPending}
     >
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Section 1: Basic Information */}
+        {/* Section 1: Basic Information (aligned with spreadsheet UID, Status, Customer) */}
         <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
           <h4 className="text-lg font-semibold text-blue-900 mb-4 flex items-center">
             <i className="fas fa-id-card mr-2"></i>
@@ -343,7 +384,7 @@ const AddPreadmissionModal = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Admission ID *
+                Admission ID (UID) *
               </label>
               <input
                 type="text"
@@ -352,11 +393,34 @@ const AddPreadmissionModal = ({
                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                   errors.admission_id ? 'border-red-300' : 'border-gray-300'
                 }`}
-                placeholder="Enter admission ID"
+                placeholder="Enter unique admission ID"
                 disabled={preadmissionMutation.isPending}
               />
               {errors.admission_id && (
                 <p className="mt-1 text-sm text-red-600">{errors.admission_id}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Zone Status *
+              </label>
+              <select
+                value={formData.zone_status}
+                onChange={(e) => handleInputChange('zone_status', e.target.value)}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  errors.zone_status ? 'border-red-300' : 'border-gray-300'
+                }`}
+                disabled={preadmissionMutation.isPending}
+              >
+                <option value="">Select status...</option>
+                <option value="NPF">Non-Privileged Foreign (NPF)</option>
+                <option value="PF">Privileged Foreign (PF)</option>
+                <option value="D">Domestic (D)</option>
+                <option value="ZR">Zone-Restricted (ZR)</option>
+              </select>
+              {errors.zone_status && (
+                <p className="mt-1 text-sm text-red-600">{errors.zone_status}</p>
               )}
             </div>
 
@@ -386,25 +450,51 @@ const AddPreadmissionModal = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Zone Status *
+                Year
               </label>
-              <select
-                value={formData.zone_status}
-                onChange={(e) => handleInputChange('zone_status', e.target.value)}
+              <input
+                type="number"
+                min="2020"
+                max="2030"
+                value={formData.year}
+                onChange={(e) => handleInputChange('year', e.target.value)}
                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.zone_status ? 'border-red-300' : 'border-gray-300'
+                  errors.year ? 'border-red-300' : 'border-gray-300'
                 }`}
+                placeholder="Enter year"
                 disabled={preadmissionMutation.isPending}
-              >
-                <option value="">Select status...</option>
-                <option value="PF">Privileged Foreign (PF)</option>
-                <option value="NPF">Non-Privileged Foreign (NPF)</option>
-                <option value="D">Domestic (D)</option>
-                <option value="ZR">Zone-Restricted (ZR)</option>
-              </select>
-              {errors.zone_status && (
-                <p className="mt-1 text-sm text-red-600">{errors.zone_status}</p>
+              />
+              {errors.year && (
+                <p className="mt-1 text-sm text-red-600">{errors.year}</p>
               )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Shipment/Lot ID
+              </label>
+              <input
+                type="text"
+                value={formData.shipment_lot_id}
+                onChange={(e) => handleInputChange('shipment_lot_id', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter shipment or lot ID"
+                disabled={preadmissionMutation.isPending}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Primary Supplier
+              </label>
+              <input
+                type="text"
+                value={formData.primary_supplier_name}
+                onChange={(e) => handleInputChange('primary_supplier_name', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter primary supplier name"
+                disabled={preadmissionMutation.isPending}
+              />
             </div>
 
             <div>
@@ -423,37 +513,145 @@ const AddPreadmissionModal = ({
           </div>
         </div>
 
-        {/* Section 2: Transport & Date Information */}
+        {/* Section 2: Transport & Shipping Information (aligned with spreadsheet BOL, Container, Seal, Carrier) */}
         <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded-r-lg">
           <h4 className="text-lg font-semibold text-green-900 mb-4 flex items-center">
             <i className="fas fa-ship mr-2"></i>
-            Transport & Date Information
+            Transport & Shipping Information
           </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Conveyance Name
-              </label>
-              <input
-                type="text"
-                value={formData.conveyance_name}
-                onChange={(e) => handleInputChange('conveyance_name', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                placeholder="Enter vessel/carrier name"
-                disabled={preadmissionMutation.isPending}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Bill of Lading/AWB No.
+                BOL Number
               </label>
               <input
                 type="text"
                 value={formData.bol}
                 onChange={(e) => handleInputChange('bol', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                placeholder="Enter BOL/AWB number"
+                placeholder="Enter BOL number"
+                disabled={preadmissionMutation.isPending}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                BOL Date
+              </label>
+              <input
+                type="date"
+                value={formData.bol_date}
+                onChange={(e) => handleInputChange('bol_date', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                disabled={preadmissionMutation.isPending}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Container ID
+              </label>
+              <input
+                type="text"
+                value={formData.container_number}
+                onChange={(e) => handleInputChange('container_number', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                placeholder="Enter container ID"
+                disabled={preadmissionMutation.isPending}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Seal Number
+              </label>
+              <input
+                type="text"
+                value={formData.seal_number}
+                onChange={(e) => handleInputChange('seal_number', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                placeholder="Enter seal number"
+                disabled={preadmissionMutation.isPending}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Carrier
+              </label>
+              <input
+                type="text"
+                value={formData.conveyance_name}
+                onChange={(e) => handleInputChange('conveyance_name', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                placeholder="Enter carrier name"
+                disabled={preadmissionMutation.isPending}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                USCBP Master Bill #
+              </label>
+              <input
+                type="text"
+                value={formData.uscbp_master_billing}
+                onChange={(e) => handleInputChange('uscbp_master_billing', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                placeholder="Enter master bill number"
+                disabled={preadmissionMutation.isPending}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Section 3: Date Information (aligned with spreadsheet date columns) */}
+        <div className="bg-purple-50 border-l-4 border-purple-400 p-4 rounded-r-lg">
+          <h4 className="text-lg font-semibold text-purple-900 mb-4 flex items-center">
+            <i className="fas fa-calendar mr-2"></i>
+            Date Information
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                FTZ Admission Date
+              </label>
+              <input
+                type="date"
+                value={formData.import_date}
+                onChange={(e) => handleInputChange('import_date', e.target.value)}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                  errors.import_date ? 'border-red-300' : 'border-gray-300'
+                }`}
+                disabled={preadmissionMutation.isPending}
+              />
+              {errors.import_date && (
+                <p className="mt-1 text-sm text-red-600">{errors.import_date}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                LUC Ship Date
+              </label>
+              <input
+                type="date"
+                value={formData.luc_ship_date}
+                onChange={(e) => handleInputChange('luc_ship_date', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                disabled={preadmissionMutation.isPending}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Freight Invoice Date
+              </label>
+              <input
+                type="date"
+                value={formData.freight_invoice_date}
+                onChange={(e) => handleInputChange('freight_invoice_date', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                 disabled={preadmissionMutation.isPending}
               />
             </div>
@@ -466,27 +664,9 @@ const AddPreadmissionModal = ({
                 type="date"
                 value={formData.export_date}
                 onChange={(e) => handleInputChange('export_date', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                 disabled={preadmissionMutation.isPending}
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Import Date
-              </label>
-              <input
-                type="date"
-                value={formData.import_date}
-                onChange={(e) => handleInputChange('import_date', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                  errors.import_date ? 'border-red-300' : 'border-gray-300'
-                }`}
-                disabled={preadmissionMutation.isPending}
-              />
-              {errors.import_date && (
-                <p className="mt-1 text-sm text-red-600">{errors.import_date}</p>
-              )}
             </div>
 
             <div>
@@ -497,21 +677,7 @@ const AddPreadmissionModal = ({
                 type="date"
                 value={formData.expected_arrival}
                 onChange={(e) => handleInputChange('expected_arrival', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                disabled={preadmissionMutation.isPending}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Container Number
-              </label>
-              <input
-                type="text"
-                value={formData.container_number}
-                onChange={(e) => handleInputChange('container_number', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                placeholder="Enter container number"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                 disabled={preadmissionMutation.isPending}
               />
             </div>
@@ -766,7 +932,7 @@ const AddPreadmissionModal = ({
           </div>
         </div>
 
-        {/* Section 5: Values */}
+        {/* Section 5: Financial Information (aligned with spreadsheet Value, Bond, Tariff, Ship Inv.) */}
         <div className="bg-gray-50 border-l-4 border-gray-400 p-4 rounded-r-lg">
           <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
             <i className="fas fa-dollar-sign mr-2"></i>
@@ -775,7 +941,7 @@ const AddPreadmissionModal = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Total Value ($)
+                Value of Goods ($)
               </label>
               <input
                 type="number"
@@ -796,7 +962,28 @@ const AddPreadmissionModal = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Total Charges ($)
+                Bond Amount ($)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.bond_amount}
+                onChange={(e) => handleInputChange('bond_amount', e.target.value)}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 ${
+                  errors.bond_amount ? 'border-red-300' : 'border-gray-300'
+                }`}
+                placeholder="0.00"
+                disabled={preadmissionMutation.isPending}
+              />
+              {errors.bond_amount && (
+                <p className="mt-1 text-sm text-red-600">{errors.bond_amount}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Tariff Amount ($)
               </label>
               <input
                 type="number"
@@ -814,6 +1001,41 @@ const AddPreadmissionModal = ({
                 <p className="mt-1 text-sm text-red-600">{errors.total_charges}</p>
               )}
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Ship Invoice Number
+              </label>
+              <input
+                type="text"
+                value={formData.ship_invoice_number}
+                onChange={(e) => handleInputChange('ship_invoice_number', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                placeholder="Enter ship invoice number"
+                disabled={preadmissionMutation.isPending}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Section 6: Notes (aligned with spreadsheet Note column) */}
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
+          <h4 className="text-lg font-semibold text-yellow-900 mb-4 flex items-center">
+            <i className="fas fa-sticky-note mr-2"></i>
+            Additional Information
+          </h4>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Notes
+            </label>
+            <textarea
+              value={formData.notes}
+              onChange={(e) => handleInputChange('notes', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              placeholder="Enter any additional notes or comments"
+              rows="3"
+              disabled={preadmissionMutation.isPending}
+            />
           </div>
         </div>
 

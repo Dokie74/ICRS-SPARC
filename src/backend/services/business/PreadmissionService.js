@@ -8,28 +8,146 @@ const DatabaseService = require('../../db/supabase-client');
 class PreadmissionService extends BaseService {
   constructor() {
     super('preadmissions');
+    
+    // Field mapping between frontend/service (snake_case) and database (camelCase)
+    // This preserves existing functionality while supporting new spreadsheet fields
+    this.fieldMapping = {
+      // Existing camelCase fields in database -> snake_case in service/frontend
+      'admission_id': 'admissionId',
+      'customer_id': 'customerId',
+      'expected_arrival': 'arrivalDate', // Existing field name mapping
+      'container_number': 'container',   // Existing field name mapping
+      
+      // New snake_case fields can be used directly (added by ALTER TABLE migration)
+      'zone_status': 'zone_status',
+      'primary_supplier_name': 'primary_supplier_name',
+      'year': 'year',
+      'shipment_lot_id': 'shipment_lot_id',
+      'bol_date': 'bol_date',
+      'seal_number': 'seal_number',
+      'luc_ship_date': 'luc_ship_date',
+      'bond_amount': 'bond_amount',
+      'freight_invoice_date': 'freight_invoice_date',
+      'ship_invoice_number': 'ship_invoice_number',
+      'uscbp_master_billing': 'uscbp_master_billing'
+    };
+  }
+  
+  /**
+   * Map service field names to database field names
+   * Handles camelCase (existing) vs snake_case (new) field mappings
+   */
+  mapToDatabase(data) {
+    const mapped = {};
+    for (const [serviceField, value] of Object.entries(data)) {
+      const dbField = this.fieldMapping[serviceField] || serviceField;
+      mapped[dbField] = value;
+    }
+    return mapped;
+  }
+  
+  /**
+   * Map database field names to service field names
+   * Handles camelCase (existing) vs snake_case (new) field mappings
+   */
+  mapFromDatabase(data) {
+    if (!data) return data;
+    if (Array.isArray(data)) return data.map(item => this.mapFromDatabase(item));
+    
+    const mapped = {};
+    for (const [dbField, value] of Object.entries(data)) {
+      // Find the service field name for this database field
+      const serviceField = Object.keys(this.fieldMapping).find(
+        key => this.fieldMapping[key] === dbField
+      ) || dbField;
+      mapped[serviceField] = value;
+    }
+    return mapped;
   }
 
   validatePreadmission(preadmissionData) {
     const errors = [];
     
-    if (!preadmissionData.admissionId || preadmissionData.admissionId.trim().length < 1) {
+    // Required fields validation
+    if (!preadmissionData.admission_id || preadmissionData.admission_id.trim().length < 1) {
       errors.push('Admission ID is required');
     }
     
-    if (!preadmissionData.customerId) {
+    if (!preadmissionData.customer_id) {
       errors.push('Customer ID is required');
     }
     
-    if (preadmissionData.container && preadmissionData.container.length > 50) {
+    // String length validations
+    if (preadmissionData.container_number && preadmissionData.container_number.length > 50) {
       errors.push('Container number must be 50 characters or less');
     }
     
+    if (preadmissionData.seal_number && preadmissionData.seal_number.length > 50) {
+      errors.push('Seal number must be 50 characters or less');
+    }
+    
+    if (preadmissionData.shipment_lot_id && preadmissionData.shipment_lot_id.length > 100) {
+      errors.push('Shipment/Lot ID must be 100 characters or less');
+    }
+    
+    if (preadmissionData.ship_invoice_number && preadmissionData.ship_invoice_number.length > 100) {
+      errors.push('Ship invoice number must be 100 characters or less');
+    }
+    
+    // Numeric field validations
     if (preadmissionData.total_value && isNaN(parseFloat(preadmissionData.total_value))) {
       errors.push('Total value must be a valid number');
     }
     
+    if (preadmissionData.bond_amount && isNaN(parseFloat(preadmissionData.bond_amount))) {
+      errors.push('Bond amount must be a valid number');
+    }
+    
+    if (preadmissionData.total_charges && isNaN(parseFloat(preadmissionData.total_charges))) {
+      errors.push('Total charges must be a valid number');
+    }
+    
+    if (preadmissionData.year && (!Number.isInteger(preadmissionData.year) || preadmissionData.year < 2020 || preadmissionData.year > 2030)) {
+      errors.push('Year must be a valid integer between 2020 and 2030');
+    }
+    
+    // Date validations
+    const dateFields = ['bol_date', 'import_date', 'export_date', 'luc_ship_date', 'freight_invoice_date', 'expected_arrival'];
+    dateFields.forEach(field => {
+      if (preadmissionData[field] && !this.isValidDate(preadmissionData[field])) {
+        errors.push(`${field.replace(/_/g, ' ')} must be a valid date`);
+      }
+    });
+    
+    // Date logic validation
+    if (preadmissionData.bol_date && preadmissionData.import_date) {
+      const bolDate = new Date(preadmissionData.bol_date);
+      const importDate = new Date(preadmissionData.import_date);
+      if (bolDate > importDate) {
+        errors.push('BOL Date cannot be after FTZ Admission Date');
+      }
+    }
+    
+    if (preadmissionData.export_date && preadmissionData.import_date) {
+      const exportDate = new Date(preadmissionData.export_date);
+      const importDate = new Date(preadmissionData.import_date);
+      if (exportDate > importDate) {
+        errors.push('Export Date cannot be after Import Date');
+      }
+    }
+    
+    // Zone status validation
+    if (preadmissionData.zone_status && !['PF', 'NPF', 'D', 'ZR'].includes(preadmissionData.zone_status)) {
+      errors.push('Zone status must be one of: PF, NPF, D, ZR');
+    }
+    
     return { isValid: errors.length === 0, errors: errors };
+  }
+  
+  isValidDate(dateString) {
+    if (!dateString) return true; // Optional dates are valid when empty
+    const date = new Date(dateString);
+    return date instanceof Date && !isNaN(date) && dateString.match(/^\d{4}-\d{2}-\d{2}$/);
   }
   
   sanitizeInput(input) {
@@ -54,6 +172,12 @@ class PreadmissionService extends BaseService {
       };
 
       const result = await DatabaseService.select('preadmissions', queryOptions);
+      
+      // Map database response back to service field names
+      if (result.success && result.data) {
+        result.data = this.mapFromDatabase(result.data);
+      }
+      
       return result;
     } catch (error) {
       console.error('Error fetching preadmissions:', error);
@@ -68,10 +192,15 @@ class PreadmissionService extends BaseService {
   async getPreadmissionById(admissionId, options = {}) {
     try {
       const result = await DatabaseService.select('preadmissions', {
-        filters: [{ column: 'admissionId', value: admissionId }],
+        filters: [{ column: 'admissionId', value: admissionId }], // Use database field name
         single: true,
         ...options
       });
+
+      // Map database response back to service field names
+      if (result.success && result.data) {
+        result.data = this.mapFromDatabase(result.data);
+      }
 
       return result;
     } catch (error) {
@@ -96,28 +225,84 @@ class PreadmissionService extends BaseService {
         };
       }
 
-      // Sanitize input data (preserves original sanitization pattern)
+      // Sanitize input data (updated for new spreadsheet-aligned fields)
       const sanitizedData = {
-        admissionId: this.sanitizeInput(preadmissionData.admissionId),
-        e214: preadmissionData.e214 ? this.sanitizeInput(preadmissionData.e214) : null,
-        container: preadmissionData.container ? this.sanitizeInput(preadmissionData.container) : null,
+        // Primary identification (matches spreadsheet UID)
+        admission_id: this.sanitizeInput(preadmissionData.admission_id),
+        
+        // Status fields (matches spreadsheet Status column)
+        status: preadmissionData.status || 'Pending',
+        zone_status: preadmissionData.zone_status || null,
+        
+        // Customer and supplier (matches spreadsheet Supplier2)
+        customer_id: preadmissionData.customer_id,
+        primary_supplier_name: preadmissionData.primary_supplier_name ? this.sanitizeInput(preadmissionData.primary_supplier_name) : null,
+        
+        // Shipment identification (new fields from spreadsheet)
+        year: preadmissionData.year || null,
+        shipment_lot_id: preadmissionData.shipment_lot_id ? this.sanitizeInput(preadmissionData.shipment_lot_id) : null,
+        
+        // Transport and BOL information (matches spreadsheet BOL fields)
         bol: preadmissionData.bol ? this.sanitizeInput(preadmissionData.bol) : null,
-        arrivalDate: preadmissionData.arrivalDate || new Date().toISOString(),
-        items: preadmissionData.items || [],
-        customerId: preadmissionData.customerId,
+        bol_date: preadmissionData.bol_date || null,
+        container_number: preadmissionData.container_number ? this.sanitizeInput(preadmissionData.container_number) : null,
+        seal_number: preadmissionData.seal_number ? this.sanitizeInput(preadmissionData.seal_number) : null,
+        
+        // Date fields (aligned with spreadsheet date columns)
+        import_date: preadmissionData.import_date || null, // FTZ Admission Date
+        export_date: preadmissionData.export_date || null, // Keep for compatibility
+        luc_ship_date: preadmissionData.luc_ship_date || null, // LUC Ship Date
+        expected_arrival: preadmissionData.expected_arrival || null,
+        freight_invoice_date: preadmissionData.freight_invoice_date || null,
+        
+        // Financial fields (matches spreadsheet Value/Bond/Tariff columns)
+        total_value: preadmissionData.total_value ? parseFloat(preadmissionData.total_value) : 0.00,
+        bond_amount: preadmissionData.bond_amount ? parseFloat(preadmissionData.bond_amount) : 0.00,
+        total_charges: preadmissionData.total_charges ? parseFloat(preadmissionData.total_charges) : 0.00,
+        
+        // Carrier and transport (matches spreadsheet Carrier column)
         conveyance_name: preadmissionData.conveyance_name ? this.sanitizeInput(preadmissionData.conveyance_name) : null,
-        import_date: preadmissionData.import_date || null,
+        it_carrier: preadmissionData.it_carrier ? this.sanitizeInput(preadmissionData.it_carrier) : null,
+        ship_invoice_number: preadmissionData.ship_invoice_number ? this.sanitizeInput(preadmissionData.ship_invoice_number) : null,
+        
+        // Customs and compliance
+        uscbp_master_billing: preadmissionData.uscbp_master_billing ? this.sanitizeInput(preadmissionData.uscbp_master_billing) : null,
+        e214: preadmissionData.e214 ? this.sanitizeInput(preadmissionData.e214) : null,
+        
+        // Port information (keep for compatibility)
+        foreign_port_of_lading: preadmissionData.foreign_port_of_lading ? this.sanitizeInput(preadmissionData.foreign_port_of_lading) : null,
+        foreign_port_of_unlading: preadmissionData.foreign_port_of_unlading ? this.sanitizeInput(preadmissionData.foreign_port_of_unlading) : null,
         port_of_unlading: preadmissionData.port_of_unlading ? this.sanitizeInput(preadmissionData.port_of_unlading) : null,
-        total_value: preadmissionData.total_value ? parseFloat(preadmissionData.total_value) : null,
-        total_charges: preadmissionData.total_charges ? parseFloat(preadmissionData.total_charges) : null,
-        status: preadmissionData.status || 'Pending'
+        it_date: preadmissionData.it_date || null,
+        it_port: preadmissionData.it_port ? this.sanitizeInput(preadmissionData.it_port) : null,
+        
+        // Notes (matches spreadsheet Note column)
+        notes: preadmissionData.notes ? this.sanitizeInput(preadmissionData.notes) : null
       };
 
-      const result = await DatabaseService.insert('preadmissions', [sanitizedData], options);
+      // Map to database field names before inserting
+      const dbData = this.mapToDatabase(sanitizedData);
+      const result = await DatabaseService.insert('preadmissions', [dbData], options);
       
-      // Handle result format (single record creation)
+      // Handle result format (single record creation) and map response back
       if (result.success && result.data.length > 0) {
-        return { success: true, data: result.data[0] };
+        const createdPreadmission = this.mapFromDatabase(result.data[0]);
+        
+        // Create items if provided
+        if (preadmissionData.items && preadmissionData.items.length > 0) {
+          const itemsResult = await this.updatePreadmissionItems(
+            createdPreadmission.id || result.data[0].id, 
+            preadmissionData.items, 
+            options
+          );
+          
+          if (!itemsResult.success) {
+            console.warn('Failed to create preadmission items:', itemsResult.error);
+            // Don't fail the entire operation, just warn
+          }
+        }
+        
+        return { success: true, data: createdPreadmission };
       }
       
       return result;
@@ -126,7 +311,7 @@ class PreadmissionService extends BaseService {
       
       // Handle unique constraint violations (preserves exact FTZ compliance error messaging)
       if (error.message.includes('duplicate key') || error.message.includes('unique constraint')) {
-        return { success: false, error: `Admission ID '${preadmissionData.admissionId}' already exists` };
+        return { success: false, error: `Admission ID '${preadmissionData.admission_id}' already exists` };
       }
       
       return { success: false, error: error.message };
@@ -149,38 +334,77 @@ class PreadmissionService extends BaseService {
         };
       }
 
-      // Sanitize input data (preserves comprehensive field support)
+      // Sanitize input data (updated for new spreadsheet-aligned fields)
       const sanitizedData = {
-        admissionId: this.sanitizeInput(preadmissionData.admissionId),
-        e214: preadmissionData.e214 ? this.sanitizeInput(preadmissionData.e214) : null,
-        container: preadmissionData.container ? this.sanitizeInput(preadmissionData.container) : null,
+        // Primary identification (matches spreadsheet UID)
+        admission_id: this.sanitizeInput(preadmissionData.admission_id),
+        
+        // Status fields (matches spreadsheet Status column)
+        status: preadmissionData.status || 'Pending',
+        zone_status: preadmissionData.zone_status || null,
+        
+        // Customer and supplier (matches spreadsheet Supplier2)
+        customer_id: preadmissionData.customer_id,
+        primary_supplier_name: preadmissionData.primary_supplier_name ? this.sanitizeInput(preadmissionData.primary_supplier_name) : null,
+        
+        // Shipment identification (new fields from spreadsheet)
+        year: preadmissionData.year || null,
+        shipment_lot_id: preadmissionData.shipment_lot_id ? this.sanitizeInput(preadmissionData.shipment_lot_id) : null,
+        
+        // Transport and BOL information (matches spreadsheet BOL fields)
         bol: preadmissionData.bol ? this.sanitizeInput(preadmissionData.bol) : null,
-        arrivalDate: preadmissionData.arrivalDate || null,
-        items: preadmissionData.items || [],
-        customerId: preadmissionData.customerId,
+        bol_date: preadmissionData.bol_date || null,
+        container_number: preadmissionData.container_number ? this.sanitizeInput(preadmissionData.container_number) : null,
+        seal_number: preadmissionData.seal_number ? this.sanitizeInput(preadmissionData.seal_number) : null,
+        
+        // Date fields (aligned with spreadsheet date columns)
+        import_date: preadmissionData.import_date || null, // FTZ Admission Date
+        export_date: preadmissionData.export_date || null, // Keep for compatibility
+        luc_ship_date: preadmissionData.luc_ship_date || null, // LUC Ship Date
+        expected_arrival: preadmissionData.expected_arrival || null,
+        freight_invoice_date: preadmissionData.freight_invoice_date || null,
+        
+        // Financial fields (matches spreadsheet Value/Bond/Tariff columns)
+        total_value: preadmissionData.total_value ? parseFloat(preadmissionData.total_value) : 0.00,
+        bond_amount: preadmissionData.bond_amount ? parseFloat(preadmissionData.bond_amount) : 0.00,
+        total_charges: preadmissionData.total_charges ? parseFloat(preadmissionData.total_charges) : 0.00,
+        
+        // Carrier and transport (matches spreadsheet Carrier column)
         conveyance_name: preadmissionData.conveyance_name ? this.sanitizeInput(preadmissionData.conveyance_name) : null,
-        import_date: preadmissionData.import_date || null,
-        export_date: preadmissionData.export_date || null,
-        port_of_unlading: preadmissionData.port_of_unlading ? this.sanitizeInput(preadmissionData.port_of_unlading) : null,
-        foreign_port_of_lading: preadmissionData.foreign_port_of_lading ? this.sanitizeInput(preadmissionData.foreign_port_of_lading) : null,
         it_carrier: preadmissionData.it_carrier ? this.sanitizeInput(preadmissionData.it_carrier) : null,
-        it_port: preadmissionData.it_port ? this.sanitizeInput(preadmissionData.it_port) : null,
+        ship_invoice_number: preadmissionData.ship_invoice_number ? this.sanitizeInput(preadmissionData.ship_invoice_number) : null,
+        
+        // Customs and compliance
+        uscbp_master_billing: preadmissionData.uscbp_master_billing ? this.sanitizeInput(preadmissionData.uscbp_master_billing) : null,
+        e214: preadmissionData.e214 ? this.sanitizeInput(preadmissionData.e214) : null,
+        
+        // Port information (keep for compatibility)
+        foreign_port_of_lading: preadmissionData.foreign_port_of_lading ? this.sanitizeInput(preadmissionData.foreign_port_of_lading) : null,
+        foreign_port_of_unlading: preadmissionData.foreign_port_of_unlading ? this.sanitizeInput(preadmissionData.foreign_port_of_unlading) : null,
+        port_of_unlading: preadmissionData.port_of_unlading ? this.sanitizeInput(preadmissionData.port_of_unlading) : null,
         it_date: preadmissionData.it_date || null,
-        it_number: preadmissionData.it_number ? this.sanitizeInput(preadmissionData.it_number) : null,
-        zone_status: preadmissionData.zone_status ? this.sanitizeInput(preadmissionData.zone_status) : null,
-        total_value: preadmissionData.total_value ? parseFloat(preadmissionData.total_value) : null,
-        total_charges: preadmissionData.total_charges ? parseFloat(preadmissionData.total_charges) : null,
-        status: preadmissionData.status || 'Pending Arrival'
+        it_port: preadmissionData.it_port ? this.sanitizeInput(preadmissionData.it_port) : null,
+        
+        // Notes (matches spreadsheet Note column)
+        notes: preadmissionData.notes ? this.sanitizeInput(preadmissionData.notes) : null
       };
 
-      const result = await DatabaseService.update('preadmissions', preadmissionId, sanitizedData, options);
+      // Map to database field names before updating
+      const dbData = this.mapToDatabase(sanitizedData);
+      const result = await DatabaseService.update('preadmissions', preadmissionId, dbData, options);
+      
+      // Map response back to service field names
+      if (result.success && result.data) {
+        result.data = this.mapFromDatabase(result.data);
+      }
+      
       return result;
     } catch (error) {
       console.error('Error updating preadmission:', error);
       
       // Handle unique constraint violations (preserves exact error messaging)
       if (error.message.includes('duplicate key') || error.message.includes('unique constraint')) {
-        return { success: false, error: `Admission ID '${preadmissionData.admissionId}' already exists` };
+        return { success: false, error: `Admission ID '${preadmissionData.admission_id}' already exists` };
       }
       
       return { success: false, error: error.message };
@@ -466,6 +690,190 @@ class PreadmissionService extends BaseService {
       console.error('Error fetching preadmission statistics:', error);
       return { success: false, error: error.message };
     }
+  }
+
+  /**
+   * Create preadmission items
+   * Handles normalized item storage for spreadsheet import compatibility
+   */
+  async createPreadmissionItems(preadmissionId, items, options = {}) {
+    try {
+      if (!items || !Array.isArray(items) || items.length === 0) {
+        return { success: true, data: [] };
+      }
+
+      const sanitizedItems = items.map(item => ({
+        preadmission_id: preadmissionId,
+        part_id: this.sanitizeInput(item.part_id),
+        variant_id: item.variant_id || null,
+        quantity: parseInt(item.quantity) || 0,
+        package_quantity: item.package_quantity ? parseInt(item.package_quantity) : null,
+        package_type: item.package_type ? this.sanitizeInput(item.package_type) : null,
+        gross_weight: item.gross_weight ? parseFloat(item.gross_weight) : null,
+        supplier_id: item.supplier_id || null,
+        country_of_origin: item.country_of_origin ? this.sanitizeInput(item.country_of_origin) : null,
+        hts_code: item.hts_code ? this.sanitizeInput(item.hts_code) : null
+      }));
+
+      const result = await DatabaseService.insert('preadmission_items', sanitizedItems, options);
+      return result;
+    } catch (error) {
+      console.error('Error creating preadmission items:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Update preadmission items
+   * Replaces all items for a preadmission (delete and recreate)
+   */
+  async updatePreadmissionItems(preadmissionId, items, options = {}) {
+    try {
+      // Delete existing items
+      const deleteResult = await DatabaseService.delete('preadmission_items', {
+        filters: [{ column: 'preadmission_id', value: preadmissionId }]
+      });
+
+      if (!deleteResult.success) {
+        console.warn('Failed to delete existing items:', deleteResult.error);
+      }
+
+      // Create new items
+      return await this.createPreadmissionItems(preadmissionId, items, options);
+    } catch (error) {
+      console.error('Error updating preadmission items:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Get preadmission with items
+   * Joins preadmission data with its items for complete record
+   */
+  async getPreadmissionWithItems(admissionId, options = {}) {
+    try {
+      // Get the preadmission
+      const preadmissionResult = await this.getPreadmissionById(admissionId, options);
+      if (!preadmissionResult.success) {
+        return preadmissionResult;
+      }
+
+      // Get the items
+      const itemsResult = await DatabaseService.select('preadmission_items', {
+        filters: [{ column: 'preadmission_id', value: preadmissionResult.data.id }],
+        orderBy: 'created_at.asc'
+      });
+
+      // Combine the data
+      const completeRecord = {
+        ...preadmissionResult.data,
+        items: itemsResult.success ? itemsResult.data : []
+      };
+
+      return { success: true, data: completeRecord };
+    } catch (error) {
+      console.error('Error fetching preadmission with items:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Import preadmission from spreadsheet data
+   * Maps spreadsheet columns to database fields
+   */
+  async importFromSpreadsheetData(spreadsheetRecord, options = {}) {
+    try {
+      // Map spreadsheet columns to database fields
+      const mappedData = {
+        admission_id: spreadsheetRecord.UID?.toString() || '',
+        status: 'Pending',
+        zone_status: spreadsheetRecord.Status || null,
+        customer_id: options.defaultCustomerId || null, // Will need to be provided
+        primary_supplier_name: spreadsheetRecord['Supplier2'] || null,
+        year: spreadsheetRecord.Year ? parseInt(spreadsheetRecord.Year) : null,
+        shipment_lot_id: spreadsheetRecord['Shipment / Lot ID'] || null,
+        bol: spreadsheetRecord['BOL Number'] || null,
+        bol_date: this.parseSpreadsheetDate(spreadsheetRecord['BOL Date']) || null,
+        container_number: spreadsheetRecord['Container ID'] || null,
+        seal_number: spreadsheetRecord['Seal #'] || null,
+        import_date: this.parseSpreadsheetDate(spreadsheetRecord['FTZ \nAdmission Date']) || null,
+        luc_ship_date: this.parseSpreadsheetDate(spreadsheetRecord['LUC \nShip Date']) || null,
+        total_value: this.parseSpreadsheetNumber(spreadsheetRecord['Value of Goods']) || 0.00,
+        bond_amount: this.parseSpreadsheetNumber(spreadsheetRecord['Bond']) || 0.00,
+        total_charges: this.parseSpreadsheetNumber(spreadsheetRecord['Tariff $']) || 0.00,
+        conveyance_name: spreadsheetRecord['Carrier'] || null,
+        uscbp_master_billing: spreadsheetRecord['USCBP \nMaster Bill #'] || null,
+        freight_invoice_date: this.parseSpreadsheetDate(spreadsheetRecord['Freight Invoice Date']) || null,
+        ship_invoice_number: spreadsheetRecord['Ship Inv.'] || null,
+        notes: spreadsheetRecord['Note'] || null
+      };
+
+      // Create the preadmission
+      const preadmissionResult = await this.createPreadmission(mappedData, options);
+      if (!preadmissionResult.success) {
+        return preadmissionResult;
+      }
+
+      // Create items if part data exists
+      if (spreadsheetRecord['Part ID'] && spreadsheetRecord['# Pcs']) {
+        const itemData = [{
+          part_id: spreadsheetRecord['Part ID'].toString(),
+          quantity: parseInt(spreadsheetRecord['# Pcs']) || 0,
+          supplier_id: null, // Will need mapping
+          country_of_origin: null,
+          hts_code: null
+        }];
+
+        await this.createPreadmissionItems(preadmissionResult.data.id, itemData, options);
+      }
+
+      return preadmissionResult;
+    } catch (error) {
+      console.error('Error importing from spreadsheet data:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Parse spreadsheet date values
+   */
+  parseSpreadsheetDate(dateValue) {
+    if (!dateValue) return null;
+    
+    // Handle Excel date objects
+    if (dateValue instanceof Date) {
+      return dateValue.toISOString().split('T')[0];
+    }
+    
+    // Handle string dates
+    if (typeof dateValue === 'string') {
+      const parsed = new Date(dateValue);
+      if (!isNaN(parsed.getTime())) {
+        return parsed.toISOString().split('T')[0];
+      }
+    }
+    
+    return null;
+  }
+
+  /**
+   * Parse spreadsheet numeric values
+   */
+  parseSpreadsheetNumber(numberValue) {
+    if (!numberValue) return 0.00;
+    
+    if (typeof numberValue === 'number') {
+      return numberValue;
+    }
+    
+    if (typeof numberValue === 'string') {
+      // Remove any currency symbols or commas
+      const cleaned = numberValue.replace(/[$,]/g, '');
+      const parsed = parseFloat(cleaned);
+      return isNaN(parsed) ? 0.00 : parsed;
+    }
+    
+    return 0.00;
   }
 }
 

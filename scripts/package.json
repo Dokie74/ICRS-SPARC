@@ -1,0 +1,15 @@
+{
+  "name": "icrs-sparc-scripts",
+  "version": "1.0.0",
+  "description": "Utility scripts for ICRS SPARC data management",
+  "scripts": {
+    "import-preadmissions": "node import-preadmissions-spreadsheet.js",
+    "import-help": "node import-preadmissions-spreadsheet.js --help"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  },
+  "keywords": ["icrs", "sparc", "ftz", "import", "spreadsheet"],
+  "author": "ICRS SPARC",
+  "license": "MIT"
+}

@@ -12,6 +12,7 @@ import AddCustomerModal from './AddCustomerModal';
 import AddSupplierModal from './AddSupplierModal';
 import AddPreadmissionModal from './AddPreadmissionModal';
 import CreatePreshipmentModal from './CreatePreshipmentModal';
+import EnhancedQuarterlyUpdateModal from './EnhancedQuarterlyUpdateModal';
 
 const ModalContainer = () => {
   const { activeModal, modalData, hideModal, showSuccess, showError, showModal } = useApp();
@@ -50,6 +51,10 @@ const ModalContainer = () => {
     'add-preshipment-modal': CreatePreshipmentModal,
     'edit-preshipment-modal': CreatePreshipmentModal,
     'PreshipmentCreateModal': CreatePreshipmentModal,
+    
+    // Quarterly Pricing
+    'enhanced-quarterly-update-modal': EnhancedQuarterlyUpdateModal,
+    'quarterly-pricing-modal': EnhancedQuarterlyUpdateModal,
     
     // Add more modal mappings as components are created
   };
@@ -99,6 +104,20 @@ const ModalContainer = () => {
         
       case 'edit-preshipment-modal':
         return { ...baseProps, preshipment: modalData, isEdit: true };
+        
+      case 'enhanced-quarterly-update-modal':
+      case 'quarterly-pricing-modal':
+        return { 
+          ...baseProps, 
+          showNotification: (type, message) => {
+            if (type === 'success') showSuccess(message);
+            else showError(message);
+          },
+          onDataUpdate: () => {
+            // Trigger any necessary data refreshes
+            console.log('Quarterly pricing data updated');
+          }
+        };
         
       default:
         return baseProps;

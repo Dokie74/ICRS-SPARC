@@ -7,6 +7,7 @@ const { asyncHandler } = require('../middleware/error-handler');
 const { requireStaff, requireManager } = require('../middleware/auth');
 const supabaseClient = require('../../db/supabase-client');
 const { isDemoToken, mockPreadmissions } = require('../../utils/mock-data');
+const preadmissionService = require('../../services/business/PreadmissionService');
 
 const router = express.Router();
 
@@ -225,113 +226,20 @@ router.get('/:id', asyncHandler(async (req, res) => {
  * Create new preadmission
  */
 router.post('/', requireStaff, asyncHandler(async (req, res) => {
-  const {
-    container_number,
-    customer_id,
-    vessel_name,
-    voyage_number,
-    bill_of_lading,
-    arrival_date,
-    entry_date,
-    customs_value,
-    freight_charges,
-    insurance_charges,
-    other_charges,
-    status = 'pending',
-    notes,
-    line_items = []
-  } = req.body;
-
-  if (!container_number || !customer_id || !arrival_date) {
-    return res.status(400).json({
-      success: false,
-      error: 'Missing required fields: container_number, customer_id, arrival_date'
-    });
-  }
-
   try {
-    // Check if container number already exists
-    const existingContainer = await supabaseClient.getAll(
-      'preadmissions',
-      {
-        filters: [{ column: 'container_number', value: container_number }],
-        limit: 1,
-        accessToken: req.accessToken
-      }
-    );
-
-    if (existingContainer.success && existingContainer.data.length > 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'Container number already exists'
-      });
+    // Use the PreadmissionService to create preadmission with proper field mapping
+    const result = await preadmissionService.createPreadmission(req.body);
+    
+    if (result.success) {
+      res.status(201).json(result);
+    } else {
+      res.status(400).json(result);
     }
-
-    const preadmissionData = {
-      container_number,
-      customer_id,
-      vessel_name,
-      voyage_number,
-      bill_of_lading,
-      arrival_date,
-      entry_date: entry_date || new Date().toISOString(),
-      customs_value: customs_value || 0,
-      freight_charges: freight_charges || 0,
-      insurance_charges: insurance_charges || 0,
-      other_charges: other_charges || 0,
-      status,
-      notes,
-      created_by: req.user.id
-    };
-
-    const result = await supabaseClient.create(
-      'preadmissions',
-      preadmissionData,
-      { accessToken: req.accessToken }
-    );
-
-    if (!result.success) {
-      return res.status(500).json(result);
-    }
-
-    const preadmissionId = result.data.id;
-
-    // Create line items if provided
-    if (line_items.length > 0) {
-      const lineItemsData = line_items.map(item => ({
-        preadmission_id: preadmissionId,
-        part_id: item.part_id,
-        quantity: item.quantity,
-        unit_value: item.unit_value || 0,
-        total_value: (item.quantity || 0) * (item.unit_value || 0),
-        notes: item.notes,
-        created_by: req.user.id
-      }));
-
-      const lineItemsResult = await supabaseClient.createBatch(
-        'preadmission_line_items',
-        lineItemsData,
-        { accessToken: req.accessToken }
-      );
-
-      if (!lineItemsResult.success) {
-        console.error('Failed to create line items:', lineItemsResult.error);
-        // Don't fail the whole operation, but log the error
-      }
-    }
-
-    res.status(201).json({
-      success: true,
-      data: {
-        ...result.data,
-        line_items_created: line_items.length
-      }
-    });
   } catch (error) {
-    console.error('Create preadmission error:', error);
+    console.error('Error creating preadmission:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to create preadmission'
+      error: 'Internal server error'
     });
   }
 }));
