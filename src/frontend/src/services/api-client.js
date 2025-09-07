@@ -4,7 +4,8 @@
 
 class ApiClient {
   constructor() {
-    this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    // Smart API URL detection - tries to auto-discover backend
+    this.baseURL = this.discoverApiUrl();
     this.token = null;
     this.user = null;
     
@@ -33,6 +34,31 @@ class ApiClient {
         return Promise.reject(error);
       }
     );
+  }
+
+  // Smart API URL discovery - tries multiple approaches to find the backend
+  discoverApiUrl() {
+    // Priority 1: Use environment variable if explicitly set
+    if (process.env.REACT_APP_API_URL) {
+      return process.env.REACT_APP_API_URL;
+    }
+    
+    // Priority 2: Use current host with common API ports
+    const currentHost = window.location.hostname;
+    const commonPorts = [5001, 5000, 8000, 3000];
+    
+    // For development, try localhost with common ports
+    if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
+      // Default to 5001 for our current setup
+      return `http://${currentHost}:5001`;
+    }
+    
+    // Priority 3: For production, assume same host with standard ports
+    if (window.location.protocol === 'https:') {
+      return `https://${currentHost}/api`;
+    } else {
+      return `http://${currentHost}:5001`;
+    }
   }
 
   // Set authentication token
@@ -210,7 +236,7 @@ class ApiClient {
     login: async (email, password) => {
       const result = await this.post('/api/auth/login', { email, password });
       if (result.success && result.data) {
-        // Handle demo auth response structure: result.data.session.access_token
+        // Handle auth response structure: result.data.session.access_token
         const token = result.data.session?.access_token || result.data.access_token;
         this.setToken(token);
         this.setUser(result.data.user);

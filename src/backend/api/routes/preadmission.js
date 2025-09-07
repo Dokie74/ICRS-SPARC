@@ -6,7 +6,6 @@ const express = require('express');
 const { asyncHandler } = require('../middleware/error-handler');
 const { requireStaff, requireManager } = require('../middleware/auth');
 const supabaseClient = require('../../db/supabase-client');
-const { isDemoToken, mockPreadmissions } = require('../../utils/mock-data');
 const preadmissionService = require('../../services/business/PreadmissionService');
 
 const router = express.Router();
@@ -24,69 +23,16 @@ router.get('/', asyncHandler(async (req, res) => {
     container_number,
     start_date,
     end_date,
-    orderBy = 'entry_date',
+    orderBy = 'created_at',
     ascending = 'false'
   } = req.query;
 
-  const accessToken = req.headers.authorization?.replace('Bearer ', '') || req.accessToken;
-
-  // Use mock data for demo tokens
-  if (isDemoToken(accessToken)) {
-    let filteredPreadmissions = [...mockPreadmissions];
-
-    // Apply filters
-    if (status) {
-      filteredPreadmissions = filteredPreadmissions.filter(pa => pa.status === status);
-    }
-    if (customer_id && customer_id !== 'undefined') {
-      filteredPreadmissions = filteredPreadmissions.filter(pa => pa.customer_id === customer_id);
-    }
-    if (container_number) {
-      filteredPreadmissions = filteredPreadmissions.filter(pa => 
-        pa.container_number.toLowerCase().includes(container_number.toLowerCase())
-      );
-    }
-    if (start_date) {
-      filteredPreadmissions = filteredPreadmissions.filter(pa => pa.entry_date >= start_date);
-    }
-    if (end_date) {
-      filteredPreadmissions = filteredPreadmissions.filter(pa => pa.entry_date <= end_date);
-    }
-
-    // Apply sorting
-    filteredPreadmissions.sort((a, b) => {
-      const aVal = a[orderBy] || a.entry_date;
-      const bVal = b[orderBy] || b.entry_date;
-      const comparison = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
-      return ascending === 'true' ? comparison : -comparison;
-    });
-
-    // Apply pagination
-    const start = parseInt(offset) || 0;
-    const count = parseInt(limit) || 100;
-    const paginatedPreadmissions = filteredPreadmissions.slice(start, start + count);
-
-    return res.json({
-      success: true,
-      data: paginatedPreadmissions,
-      count: filteredPreadmissions.length,
-      pagination: {
-        limit: parseInt(limit),
-        offset: parseInt(offset),
-        total: filteredPreadmissions.length
-      }
-    });
-  }
 
   try {
     const options = {
       select: `
         *,
-        customers:customer_id(id, name, code),
-        preadmission_line_items:preadmission_id(
-          id, part_id, quantity, unit_value, total_value,
-          parts:part_id(description, material)
-        )
+        customers:customerId(id, name, ein)
       `,
       orderBy: {
         column: orderBy,
@@ -94,13 +40,15 @@ router.get('/', asyncHandler(async (req, res) => {
       },
       limit: parseInt(limit),
       offset: parseInt(offset),
-      accessToken: accessToken
+      accessToken: req.accessToken
     };
 
     // Add filters
     const filters = [];
-    if (status) filters.push({ column: 'status', value: status });
-    if (customer_id) filters.push({ column: 'customer_id', value: customer_id });
+    if (status) {
+      filters.push({ column: 'status', value: status });
+    }
+    if (customer_id) filters.push({ column: 'customerId', value: customer_id });
     if (container_number) {
       filters.push({ 
         column: 'container_number', 
@@ -109,10 +57,10 @@ router.get('/', asyncHandler(async (req, res) => {
       });
     }
     if (start_date) {
-      filters.push({ column: 'entry_date', value: start_date, operator: 'gte' });
+      filters.push({ column: 'created_at', value: start_date, operator: 'gte' });
     }
     if (end_date) {
-      filters.push({ column: 'entry_date', value: end_date, operator: 'lte' });
+      filters.push({ column: 'created_at', value: end_date, operator: 'lte' });
     }
 
     if (filters.length > 0) {
@@ -122,7 +70,7 @@ router.get('/', asyncHandler(async (req, res) => {
     const result = await supabaseClient.getAll('preadmissions', options);
 
     // Transform data to include calculated totals
-    const transformedData = result.data.map(pa => {
+    const transformedData = (result.data || []).map(pa => {
       const lineItems = pa.preadmission_line_items || [];
       const totals = lineItems.reduce((acc, item) => {
         acc.total_quantity += item.quantity || 0;
@@ -135,7 +83,7 @@ router.get('/', asyncHandler(async (req, res) => {
         ...pa,
         line_items_summary: totals,
         customer_name: pa.customers?.name,
-        customer_code: pa.customers?.code
+        customer_code: pa.customers?.ein
       };
     });
 
@@ -172,14 +120,11 @@ router.get('/:id', asyncHandler(async (req, res) => {
       {
         select: `
           *,
-          customers:customer_id(id, name, code, contact_person, email),
-          preadmission_line_items:preadmission_id(
-            id, part_id, quantity, unit_value, total_value, notes,
-            parts:part_id(id, description, material, hts_code, country_of_origin)
-          )
+          customers:customerId(id, name, ein, contact_email)
         `,
         accessToken: req.accessToken
-      }
+      },
+      false  // Use RLS
     );
 
     if (!result.success) {
@@ -267,7 +212,8 @@ router.put('/:id', requireStaff, asyncHandler(async (req, res) => {
       'preadmissions',
       id,
       updateData,
-      { accessToken: req.accessToken }
+      { accessToken: req.accessToken },
+      false  // Use RLS
     );
 
     res.json(result);
@@ -317,7 +263,8 @@ router.put('/:id/status', requireStaff, asyncHandler(async (req, res) => {
       'preadmissions',
       id,
       updateData,
-      { accessToken: req.accessToken }
+      { accessToken: req.accessToken },
+      false  // Use RLS
     );
 
     res.json(result);
@@ -345,7 +292,8 @@ router.delete('/:id', requireManager, asyncHandler(async (req, res) => {
         filters: [{ column: 'preadmission_id', value: id }],
         limit: 1,
         accessToken: req.accessToken
-      }
+      },
+      false  // Use RLS
     );
 
     // Delete line items first if they exist
@@ -359,7 +307,7 @@ router.delete('/:id', requireManager, asyncHandler(async (req, res) => {
         'execute_sql',
         { query: deleteLineItemsQuery, params: [id] },
         { accessToken: req.accessToken },
-        true // Use admin client for delete operations
+        false // Use RLS for delete operations
       );
     }
 
@@ -367,7 +315,8 @@ router.delete('/:id', requireManager, asyncHandler(async (req, res) => {
     const result = await supabaseClient.delete(
       'preadmissions',
       id,
-      { accessToken: req.accessToken }
+      { accessToken: req.accessToken },
+      false  // Use RLS
     );
 
     res.json(result);

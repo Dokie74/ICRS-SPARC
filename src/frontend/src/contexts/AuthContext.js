@@ -118,7 +118,7 @@ export const AuthProvider = ({ children }) => {
       const token = localStorage.getItem('icrs_auth_token');
 
       if (token && currentUser) {
-        // For demo mode, just verify user exists and restore session
+        // Verify user exists and restore session
         try {
           dispatch({
             type: AUTH_ACTIONS.LOGIN_SUCCESS,
@@ -147,7 +147,7 @@ export const AuthProvider = ({ children }) => {
   // Load user permissions and employee data
   const loadUserPermissions = async (user) => {
     try {
-      // For demo mode, use role from user metadata
+      // Use role from user metadata
       // In production, this would load from /api/auth/permissions
       const role = user.user_metadata?.role || user.role || 'warehouse_staff';
       const permissions = getPermissionsFromRole(role);
@@ -157,11 +157,11 @@ export const AuthProvider = ({ children }) => {
         payload: permissions
       });
       
-      // Create basic employee record from user data for demo
+      // Create basic employee record from user data
       dispatch({
         type: AUTH_ACTIONS.SET_EMPLOYEE,
         payload: {
-          first_name: user.user_metadata?.full_name?.split(' ')[0] || 'Demo',
+          first_name: user.user_metadata?.full_name?.split(' ')[0] || 'User',
           last_name: user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || 'User',
           role: role
         }

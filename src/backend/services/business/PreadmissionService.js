@@ -171,7 +171,7 @@ class PreadmissionService extends BaseService {
         offset: options.offset
       };
 
-      const result = await DatabaseService.select('preadmissions', queryOptions);
+      const result = await DatabaseService.getAll('preadmissions', queryOptions);
       
       // Map database response back to service field names
       if (result.success && result.data) {
@@ -191,7 +191,7 @@ class PreadmissionService extends BaseService {
    */
   async getPreadmissionById(admissionId, options = {}) {
     try {
-      const result = await DatabaseService.select('preadmissions', {
+      const result = await DatabaseService.getAll('preadmissions', {
         filters: [{ column: 'admissionId', value: admissionId }], // Use database field name
         single: true,
         ...options
@@ -429,7 +429,7 @@ class PreadmissionService extends BaseService {
         skid_count: auditData.skid_count ? parseInt(auditData.skid_count) : null
       };
 
-      const result = await DatabaseService.select('preadmissions', {
+      const result = await DatabaseService.getAll('preadmissions', {
         filters: [{ column: 'admissionId', value: admissionId }],
         single: true,
         ...options
@@ -529,7 +529,7 @@ class PreadmissionService extends BaseService {
    */
   async getPreadmissionsByStatus(status, options = {}) {
     try {
-      const result = await DatabaseService.select('preadmissions', {
+      const result = await DatabaseService.getAll('preadmissions', {
         filters: [{ column: 'status', value: status }],
         orderBy: 'created_at.desc',
         ...options
@@ -548,7 +548,7 @@ class PreadmissionService extends BaseService {
    */
   async getPreadmissionsByCustomer(customerId, options = {}) {
     try {
-      const result = await DatabaseService.select('preadmissions', {
+      const result = await DatabaseService.getAll('preadmissions', {
         filters: [{ column: 'customerId', value: customerId }],
         orderBy: 'created_at.desc',
         ...options
@@ -577,7 +577,7 @@ class PreadmissionService extends BaseService {
         queryFilters.push({ column: 'customerId', value: filters.customerId });
       }
 
-      const result = await DatabaseService.select('preadmissions', {
+      const result = await DatabaseService.getAll('preadmissions', {
         filters: queryFilters,
         orderBy: 'created_at.desc',
         ...options
@@ -642,7 +642,7 @@ class PreadmissionService extends BaseService {
       
       // Date range filtering would need enhanced DatabaseService support
       // For now, get all and filter client-side (preserves original pattern)
-      const result = await DatabaseService.select('preadmissions', {
+      const result = await DatabaseService.getAll('preadmissions', {
         ...options
       });
       
@@ -759,7 +759,7 @@ class PreadmissionService extends BaseService {
       }
 
       // Get the items
-      const itemsResult = await DatabaseService.select('preadmission_items', {
+      const itemsResult = await DatabaseService.getAll('preadmission_items', {
         filters: [{ column: 'preadmission_id', value: preadmissionResult.data.id }],
         orderBy: 'created_at.asc'
       });

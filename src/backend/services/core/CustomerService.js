@@ -49,7 +49,7 @@ class CustomerService extends BaseService {
         offset: options.offset
       };
 
-      const result = await DatabaseService.select('customers', queryOptions);
+      const result = await DatabaseService.getAll('customers', queryOptions);
       return result;
     } catch (error) {
       console.error('Error fetching customers:', error);
@@ -63,7 +63,7 @@ class CustomerService extends BaseService {
    */
   async getCustomerById(customerId, options = {}) {
     try {
-      const result = await DatabaseService.select('customers', {
+      const result = await DatabaseService.getAll('customers', {
         filters: [{ column: 'id', value: customerId }],
         single: true,
         ...options
@@ -194,7 +194,7 @@ class CustomerService extends BaseService {
     try {
       const queryFilters = [];
 
-      const result = await DatabaseService.select('customers', {
+      const result = await DatabaseService.getAll('customers', {
         filters: queryFilters,
         orderBy: 'name.asc',
         ...options
@@ -225,7 +225,7 @@ class CustomerService extends BaseService {
    */
   async getActiveCustomers(options = {}) {
     try {
-      const result = await DatabaseService.select('customers', {
+      const result = await DatabaseService.getAll('customers', {
         orderBy: 'name.asc',
         ...options
       });
@@ -244,7 +244,7 @@ class CustomerService extends BaseService {
   async getCustomerStats(customerId, options = {}) {
     try {
       // Get total lots for customer (preserves original statistics logic)
-      const lotsResult = await DatabaseService.select('inventory_lots', {
+      const lotsResult = await DatabaseService.getAll('inventory_lots', {
         filters: [{ column: 'customer_id', value: customerId }],
         select: 'id, status, current_quantity, total_value',
         ...options
@@ -308,7 +308,7 @@ class CustomerService extends BaseService {
    */
   async hasActiveInventory(customerId, options = {}) {
     try {
-      const result = await DatabaseService.select('inventory_lots', {
+      const result = await DatabaseService.getAll('inventory_lots', {
         filters: [
           { column: 'customer_id', value: customerId },
           { column: 'current_quantity', operator: 'gt', value: 0 }
@@ -390,7 +390,7 @@ class CustomerService extends BaseService {
    */
   async getCustomerContacts(customerId, options = {}) {
     try {
-      const result = await DatabaseService.select('customer_contacts', {
+      const result = await DatabaseService.getAll('customer_contacts', {
         filters: [{ column: 'customer_id', value: customerId }],
         orderBy: 'is_primary.desc', // Primary contact first
         ...options
@@ -445,7 +445,7 @@ class CustomerService extends BaseService {
     try {
       // If this is set as primary, get customer_id and unset other primary contacts
       if (contactData.is_primary) {
-        const contactResult = await DatabaseService.select('customer_contacts', {
+        const contactResult = await DatabaseService.getAll('customer_contacts', {
           filters: [{ column: 'id', value: contactId }],
           single: true,
           ...options
@@ -512,7 +512,7 @@ class CustomerService extends BaseService {
   async setPrimaryContact(contactId, options = {}) {
     try {
       // Get the contact to find customer_id
-      const contactResult = await DatabaseService.select('customer_contacts', {
+      const contactResult = await DatabaseService.getAll('customer_contacts', {
         filters: [{ column: 'id', value: contactId }],
         single: true,
         ...options
@@ -571,7 +571,7 @@ class CustomerService extends BaseService {
     try {
       const queryFilters = [];
 
-      const result = await DatabaseService.select('customers', {
+      const result = await DatabaseService.getAll('customers', {
         filters: queryFilters,
         orderBy: 'name.asc',
         ...options

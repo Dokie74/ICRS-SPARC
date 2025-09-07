@@ -176,3 +176,6 @@ Task("UI Tests", "Run Playwright test suite on staging app", "playwright")
 5. Land docs only in approved roots.  
 6. Batch **TodoWrite** once.  
 7. Update `/docs/STATUS.md` (separate step) after integration tests pass.
+- Always check if you have cli connect to supabase.  If you don't, ask for it.  Never trust .sql files in teh directory.
+- If you come across anything related to "demo", remove it and notify me.
+- always look at the live supabase database when you require information on the schema.  do not trust the migrations as they may not be the latest.

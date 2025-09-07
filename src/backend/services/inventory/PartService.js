@@ -68,7 +68,7 @@ class PartService extends BaseService {
         offset: options.offset
       };
 
-      const result = await DatabaseService.select('parts', queryOptions);
+      const result = await DatabaseService.getAll('parts', queryOptions);
       return result;
     } catch (error) {
       console.error('Error fetching parts:', error);
@@ -82,7 +82,7 @@ class PartService extends BaseService {
    */
   async getPartById(partId, options = {}) {
     try {
-      const result = await DatabaseService.select('parts', {
+      const result = await DatabaseService.getAll('parts', {
         filters: [{ column: 'id', value: partId }],
         single: true,
         ...options
@@ -226,7 +226,7 @@ class PartService extends BaseService {
         queryFilters.push({ column: 'manufacturer_id', value: filters.manufacturer_id });
       }
 
-      const result = await DatabaseService.select('parts', {
+      const result = await DatabaseService.getAll('parts', {
         filters: queryFilters,
         orderBy: 'id.asc',
         ...options
@@ -257,7 +257,7 @@ class PartService extends BaseService {
    */
   async getActiveParts(options = {}) {
     try {
-      const result = await DatabaseService.select('parts', {
+      const result = await DatabaseService.getAll('parts', {
         orderBy: 'id.asc',
         ...options
       });
@@ -275,7 +275,7 @@ class PartService extends BaseService {
    */
   async getPartsByHTSCode(htsCode, options = {}) {
     try {
-      const result = await DatabaseService.select('parts', {
+      const result = await DatabaseService.getAll('parts', {
         filters: [{ column: 'hts_code', value: htsCode }],
         orderBy: 'id.asc',
         ...options
@@ -294,7 +294,7 @@ class PartService extends BaseService {
    */
   async getPartsByCountry(countryCode, options = {}) {
     try {
-      const result = await DatabaseService.select('parts', {
+      const result = await DatabaseService.getAll('parts', {
         filters: [{ column: 'country_of_origin', value: countryCode }],
         orderBy: 'id.asc',
         ...options
@@ -314,7 +314,7 @@ class PartService extends BaseService {
   async getPartUsageStats(partId, options = {}) {
     try {
       // Get all lots for this part
-      const lotsResult = await DatabaseService.select('inventory_lots', {
+      const lotsResult = await DatabaseService.getAll('inventory_lots', {
         filters: [{ column: 'part_id', value: partId }],
         select: 'id, status, original_quantity, current_quantity, admission_date, customer_id',
         ...options
@@ -372,7 +372,7 @@ class PartService extends BaseService {
    */
   async isPartInUse(partId, options = {}) {
     try {
-      const result = await DatabaseService.select('inventory_lots', {
+      const result = await DatabaseService.getAll('inventory_lots', {
         filters: [{ column: 'part_id', value: partId }],
         select: 'id',
         limit: 1,
@@ -395,7 +395,7 @@ class PartService extends BaseService {
    */
   async getCountriesOfOrigin(options = {}) {
     try {
-      const result = await DatabaseService.select('parts', {
+      const result = await DatabaseService.getAll('parts', {
         select: 'country_of_origin',
         filters: [],
         ...options
@@ -425,7 +425,7 @@ class PartService extends BaseService {
    */
   async getManufacturers(options = {}) {
     try {
-      const result = await DatabaseService.select('parts', {
+      const result = await DatabaseService.getAll('parts', {
         select: 'manufacturer_id',
         filters: [],
         ...options
@@ -504,7 +504,7 @@ class PartService extends BaseService {
    */
   async getSuppliersForPart(partId, options = {}) {
     try {
-      const result = await DatabaseService.select('part_suppliers', {
+      const result = await DatabaseService.getAll('part_suppliers', {
         filters: [{ column: 'part_id', value: partId }],
         select: 'supplier_id, suppliers(*)',
         ...options
@@ -604,7 +604,7 @@ class PartService extends BaseService {
         queryFilters.push({ column: 'country_of_origin', value: filters.country_of_origin });
       }
 
-      const result = await DatabaseService.select('parts', {
+      const result = await DatabaseService.getAll('parts', {
         filters: queryFilters,
         orderBy: 'id.asc',
         ...options

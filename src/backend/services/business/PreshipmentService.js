@@ -57,7 +57,7 @@ class PreshipmentService extends BaseService {
         offset: options.offset
       };
 
-      const result = await DatabaseService.select('preshipments', queryOptions);
+      const result = await DatabaseService.getAll('preshipments', queryOptions);
       return result;
     } catch (error) {
       console.error('Error fetching preshipments:', error);
@@ -71,7 +71,7 @@ class PreshipmentService extends BaseService {
    */
   async getPreshipmentById(shipmentId, options = {}) {
     try {
-      const result = await DatabaseService.select('preshipments', {
+      const result = await DatabaseService.getAll('preshipments', {
         filters: [{ column: 'shipmentId', value: shipmentId }],
         single: true,
         ...options
@@ -141,7 +141,7 @@ class PreshipmentService extends BaseService {
    */
   async updatePreshipmentStage(shipmentId, stage, options = {}) {
     try {
-      const result = await DatabaseService.select('preshipments', {
+      const result = await DatabaseService.getAll('preshipments', {
         filters: [{ column: 'shipmentId', value: shipmentId }],
         single: true,
         ...options
@@ -178,7 +178,7 @@ class PreshipmentService extends BaseService {
         };
       }
 
-      const result = await DatabaseService.select('preshipments', {
+      const result = await DatabaseService.getAll('preshipments', {
         filters: [{ column: 'shipmentId', value: shipmentId }],
         single: true,
         ...options
@@ -214,7 +214,7 @@ class PreshipmentService extends BaseService {
    */
   async getPreshipmentsByStage(stage, options = {}) {
     try {
-      const result = await DatabaseService.select('preshipments', {
+      const result = await DatabaseService.getAll('preshipments', {
         filters: [{ column: 'stage', value: stage }],
         orderBy: 'created_at.desc',
         ...options
@@ -233,7 +233,7 @@ class PreshipmentService extends BaseService {
    */
   async getPreshipmentsByCustomer(customerId, options = {}) {
     try {
-      const result = await DatabaseService.select('preshipments', {
+      const result = await DatabaseService.getAll('preshipments', {
         filters: [{ column: 'customerId', value: customerId }],
         orderBy: 'created_at.desc',
         ...options
@@ -252,7 +252,7 @@ class PreshipmentService extends BaseService {
    */
   async getPreshipmentsByType(type, options = {}) {
     try {
-      const result = await DatabaseService.select('preshipments', {
+      const result = await DatabaseService.getAll('preshipments', {
         filters: [{ column: 'type', value: type }],
         orderBy: 'created_at.desc',
         ...options
@@ -285,7 +285,7 @@ class PreshipmentService extends BaseService {
         queryFilters.push({ column: 'customerId', value: filters.customerId });
       }
 
-      const result = await DatabaseService.select('preshipments', {
+      const result = await DatabaseService.getAll('preshipments', {
         filters: queryFilters,
         orderBy: 'created_at.desc',
         ...options
@@ -388,7 +388,7 @@ class PreshipmentService extends BaseService {
    */
   async updatePreshipmentItems(shipmentId, items, options = {}) {
     try {
-      const result = await DatabaseService.select('preshipments', {
+      const result = await DatabaseService.getAll('preshipments', {
         filters: [{ column: 'shipmentId', value: shipmentId }],
         single: true,
         ...options
@@ -425,7 +425,7 @@ class PreshipmentService extends BaseService {
    */
   async getPreshipmentStats(dateRange = {}, options = {}) {
     try {
-      const result = await DatabaseService.select('preshipments', {
+      const result = await DatabaseService.getAll('preshipments', {
         ...options
       });
       

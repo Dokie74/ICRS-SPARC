@@ -1,0 +1,196 @@
+{
+  "expectedTables": {
+    "parts": {
+      "files": [
+        "admin.js",
+        "materials.js",
+        "parts.js"
+      ],
+      "methods": [
+        "getAll",
+        "getById",
+        "create",
+        "update"
+      ],
+      "columns": [
+        "name",
+        "type",
+        "part_id"
+      ],
+      "relationships": []
+    },
+    "customers": {
+      "files": [
+        "admin.js",
+        "customers.js",
+        "dashboard.js"
+      ],
+      "methods": [
+        "getAll",
+        "getById",
+        "create",
+        "update"
+      ],
+      "columns": [
+        "name",
+        "code",
+        "id",
+        "customer_id"
+      ],
+      "relationships": []
+    },
+    "suppliers": {
+      "files": [
+        "admin.js"
+      ],
+      "methods": [
+        "getAll",
+        "create",
+        "update",
+        "delete"
+      ],
+      "columns": [
+        "name",
+        "type"
+      ],
+      "relationships": []
+    },
+    "inventory_lots": {
+      "files": [
+        "customers.js",
+        "dashboard.js",
+        "inventory.js",
+        "parts.js"
+      ],
+      "methods": [
+        "getAll",
+        "getById",
+        "create",
+        "update"
+      ],
+      "columns": [
+        "customer_id",
+        "created_at",
+        "status",
+        "expiration_date",
+        "lot_id",
+        "transaction_type",
+        "transaction_date",
+        "part_id"
+      ],
+      "relationships": []
+    },
+    "preadmissions": {
+      "files": [
+        "customers.js",
+        "dashboard.js",
+        "preadmission.js"
+      ],
+      "methods": [
+        "getAll",
+        "getById",
+        "update",
+        "delete"
+      ],
+      "columns": [
+        "created_at",
+        "status"
+      ],
+      "relationships": []
+    },
+    "transactions": {
+      "files": [
+        "dashboard.js",
+        "inventory.js"
+      ],
+      "methods": [
+        "getAll",
+        "create"
+      ],
+      "columns": [
+        "transaction_date"
+      ],
+      "relationships": []
+    },
+    "storage_locations": {
+      "files": [
+        "locations.js"
+      ],
+      "methods": [
+        "getAll",
+        "getById",
+        "create",
+        "update"
+      ],
+      "columns": [],
+      "relationships": []
+    },
+    "material_indices": {
+      "files": [
+        "materials.js"
+      ],
+      "methods": [
+        "getAll",
+        "getById",
+        "create",
+        "update"
+      ],
+      "columns": [
+        "description"
+      ],
+      "relationships": []
+    },
+    "preadmission_line_items": {
+      "files": [
+        "preadmission.js"
+      ],
+      "methods": [
+        "getAll"
+      ],
+      "columns": [
+        "preadmission_id"
+      ],
+      "relationships": []
+    },
+    "inventory": {
+      "files": [
+        "preshipments.js"
+      ],
+      "methods": [
+        "getAll"
+      ],
+      "columns": [
+        "part_id"
+      ],
+      "relationships": []
+    },
+    "preshipments": {
+      "files": [
+        "preshipments.js"
+      ],
+      "methods": [
+        "getAll",
+        "getById",
+        "create",
+        "update",
+        "delete"
+      ],
+      "columns": [
+        "stage",
+        "type",
+        "customerId",
+        "entry_summary_status",
+        "shipmentId",
+        "entryNumber",
+        "created_at",
+        "priority"
+      ],
+      "relationships": []
+    }
+  },
+  "summary": {
+    "totalTables": 11,
+    "totalColumns": 31,
+    "filesAnalyzed": 14
+  }
+}

@@ -26,38 +26,8 @@ router.post('/login', asyncHandler(async (req, res) => {
     });
   }
 
-  // Check if this is demo mode (password less than 6 chars or demo email)
-  const isDemoMode = password.length < 6 || email.includes('demo') || process.env.NODE_ENV === 'development';
-
-  if (isDemoMode) {
-    // Demo mode - return mock data for testing
-    const mockUser = {
-      id: '550e8400-e29b-41d4-a716-446655440000',
-      email: email,
-      user_metadata: {
-        full_name: 'Demo User',
-        role: 'admin'
-      }
-    };
-
-    const mockSession = {
-      access_token: 'demo-token-for-testing-only-' + Date.now(),
-      refresh_token: 'demo-refresh-token',
-      expires_at: new Date(Date.now() + 3600000).toISOString(), // 1 hour
-      expires_in: 3600
-    };
-
-    return res.json({
-      success: true,
-      data: {
-        user: mockUser,
-        session: mockSession
-      }
-    });
-  }
-
   try {
-    // Production mode - use Supabase authentication
+    // Use Supabase authentication for all users
     const { data, error } = await supabaseClient.anonClient.auth.signInWithPassword({
       email,
       password
@@ -114,20 +84,6 @@ router.post('/refresh', asyncHandler(async (req, res) => {
     });
   }
 
-  // Handle demo refresh tokens
-  if (refresh_token === 'demo-refresh-token') {
-    return res.json({
-      success: true,
-      data: {
-        session: {
-          access_token: 'demo-token-for-testing-only-' + Date.now(),
-          refresh_token: 'demo-refresh-token',
-          expires_at: new Date(Date.now() + 3600000).toISOString(),
-          expires_in: 3600
-        }
-      }
-    });
-  }
 
   try {
     const { data, error } = await supabaseClient.anonClient.auth.refreshSession({
@@ -185,26 +141,7 @@ router.get('/me', authMiddleware, asyncHandler(async (req, res) => {
     });
   }
 
-  // For demo tokens, return the mock user data
-  if (req.accessToken && req.accessToken.startsWith('demo-token-for-testing-only-')) {
-    res.json({
-      success: true,
-      data: {
-        id: req.user.id,
-        email: req.user.email,
-        email_confirmed: true,
-        last_sign_in: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        profile: {
-          full_name: req.user.user_metadata?.full_name || 'Demo User',
-          role: req.user.user_metadata?.role || 'admin'
-        }
-      }
-    });
-    return;
-  }
-
-  // For real tokens, use the auth service
+  // Use the auth service for profile fetching
   try {
     const profileResult = await authService.getUserProfile(req.user.id, {
       accessToken: req.accessToken
@@ -426,7 +363,7 @@ router.get('/users', authMiddleware, asyncHandler(async (req, res) => {
   };
 
   if (active !== undefined) {
-    options.filters = [{ column: 'active', value: active === 'true' }];
+    options.filters = [];
   }
 
   const result = await authService.getAllUsers(options);

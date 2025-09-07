@@ -7,7 +7,6 @@ const multer = require('multer');
 const { asyncHandler } = require('../middleware/error-handler');
 const { requireStaff, requireManager } = require('../middleware/auth');
 const ReceivingService = require('../../services/business/ReceivingService');
-const { isDemoToken } = require('../../utils/mock-data');
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
@@ -48,70 +47,13 @@ router.get('/', asyncHandler(async (req, res) => {
 
   const accessToken = req.headers.authorization?.replace('Bearer ', '') || req.accessToken;
 
-  // Handle demo tokens with mock data
-  if (isDemoToken(accessToken)) {
-    const mockReceivables = [
-      {
-        id: '1',
-        admission_id: 'ADM-2024-001',
-        customer_id: 'CUST-001',
-        customer_name: 'Acme Manufacturing',
-        container_number: 'CONT123456789',
-        vessel_name: 'MV Ocean Trader',
-        bill_of_lading: 'BOL-001',
-        status: 'Pending',
-        arrival_date: '2024-01-15T08:00:00Z',
-        audit_status: null,
-        created_at: '2024-01-14T09:00:00Z'
-      },
-      {
-        id: '2',
-        admission_id: 'ADM-2024-002',
-        customer_id: 'CUST-002',
-        customer_name: 'Tech Solutions Inc',
-        container_number: 'CONT987654321',
-        vessel_name: 'MV Global Express',
-        bill_of_lading: 'BOL-002',
-        status: 'Accepted',
-        arrival_date: '2024-01-14T14:00:00Z',
-        audit_status: 'Accepted',
-        created_at: '2024-01-13T11:00:00Z'
-      }
-    ];
-
-    let filteredReceivables = [...mockReceivables];
-
-    // Apply filters
-    if (status) {
-      filteredReceivables = filteredReceivables.filter(r => r.status === status);
-    }
-    if (customer_id && customer_id !== 'undefined') {
-      filteredReceivables = filteredReceivables.filter(r => r.customer_id === customer_id);
-    }
-    if (container_number) {
-      filteredReceivables = filteredReceivables.filter(r => 
-        r.container_number.toLowerCase().includes(container_number.toLowerCase())
-      );
-    }
-
-    return res.json({
-      success: true,
-      data: filteredReceivables.slice(parseInt(offset), parseInt(offset) + parseInt(limit)),
-      count: filteredReceivables.length,
-      pagination: {
-        limit: parseInt(limit),
-        offset: parseInt(offset),
-        total: filteredReceivables.length
-      }
-    });
-  }
 
   try {
     const options = {
-      orderBy: {
+      orderBy: orderBy ? {
         column: orderBy,
         ascending: ascending === 'true'
-      },
+      } : undefined,
       limit: parseInt(limit),
       offset: parseInt(offset),
       accessToken: accessToken
@@ -119,7 +61,9 @@ router.get('/', asyncHandler(async (req, res) => {
 
     // Add filters
     const filters = [];
-    if (status) filters.push({ column: 'status', value: status });
+    if (status) {
+      filters.push({ column: 'status', value: status });
+    }
     if (customer_id) filters.push({ column: 'customer_id', value: customer_id });
     if (container_number) {
       filters.push({ 
@@ -145,22 +89,12 @@ router.get('/', asyncHandler(async (req, res) => {
       return res.status(500).json(result);
     }
 
-    // Transform data to include calculated totals
+    // Transform data to include customer information
     const transformedData = result.data.map(receivable => {
-      const lineItems = receivable.preadmission_line_items || [];
-      const totals = lineItems.reduce((acc, item) => {
-        acc.expected_quantity += item.expected_quantity || 0;
-        acc.actual_quantity += item.actual_quantity || 0;
-        acc.line_count += 1;
-        return acc;
-      }, { expected_quantity: 0, actual_quantity: 0, line_count: 0 });
-
       return {
         ...receivable,
-        line_items_summary: totals,
         customer_name: receivable.customers?.name,
-        customer_code: receivable.customers?.code,
-        contact_person: receivable.customers?.contact_person
+        customer_code: receivable.customers?.ein
       };
     });
 

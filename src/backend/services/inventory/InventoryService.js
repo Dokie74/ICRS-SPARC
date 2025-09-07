@@ -23,7 +23,7 @@ class InventoryService extends EnhancedBaseService {
         select: `
           *,
           parts:part_id(id, description, material),
-          customers:customer_id(id, name),
+          customers(id, name),
           storage_locations:storage_location_id(id, location_code, description),
           transactions(quantity)
         `,
@@ -40,7 +40,7 @@ class InventoryService extends EnhancedBaseService {
       }
 
       console.log('Executing inventory query...');
-      const result = await DatabaseService.select('inventory_lots', query);
+      const result = await DatabaseService.getAll('inventory_lots', query);
 
       if (!result.success) {
         console.error('Database query error:', result.error);
@@ -94,7 +94,7 @@ class InventoryService extends EnhancedBaseService {
         select: `
           *,
           parts:part_id(id, description, material, hts_code, unit_of_measure, country_of_origin, standard_value),
-          customers:customer_id(id, name),
+          customers(id, name),
           storage_locations:storage_location_id(id, location_code, description),
           transactions(
             id,
@@ -109,7 +109,7 @@ class InventoryService extends EnhancedBaseService {
         single: true
       };
 
-      const result = await DatabaseService.select('inventory_lots', query);
+      const result = await DatabaseService.getAll('inventory_lots', query);
 
       if (!result.success) {
         console.error('Error fetching lot details:', result.error);
@@ -518,7 +518,7 @@ class InventoryService extends EnhancedBaseService {
    */
   async getLowStockItems(threshold = 10, options = {}) {
     try {
-      const result = await DatabaseService.select('inventory_lots', {
+      const result = await DatabaseService.getAll('inventory_lots', {
         select: 'id, part_id, customer_id, current_quantity, status',
         filters: [{ column: 'current_quantity', operator: 'lte', value: threshold }],
         ...options
@@ -551,7 +551,7 @@ class InventoryService extends EnhancedBaseService {
         queryFilters.push({ column: 'part_id', value: filters.part_id });
       }
 
-      const result = await DatabaseService.select('inventory_lots', {
+      const result = await DatabaseService.getAll('inventory_lots', {
         filters: queryFilters,
         orderBy: 'created_at.desc',
         ...options
@@ -581,7 +581,7 @@ class InventoryService extends EnhancedBaseService {
    */
   async getLotsByStatus(status, options = {}) {
     try {
-      const result = await DatabaseService.select('inventory_lots', {
+      const result = await DatabaseService.getAll('inventory_lots', {
         filters: [{ column: 'status', value: status }],
         orderBy: 'created_at.desc',
         ...options
@@ -600,7 +600,7 @@ class InventoryService extends EnhancedBaseService {
    */
   async getLotsByCustomer(customerId, options = {}) {
     try {
-      const result = await DatabaseService.select('inventory_lots', {
+      const result = await DatabaseService.getAll('inventory_lots', {
         filters: [{ column: 'customer_id', value: customerId }],
         orderBy: 'created_at.desc',
         ...options
@@ -619,7 +619,7 @@ class InventoryService extends EnhancedBaseService {
    */
   async getLotTransactionHistory(lotId, options = {}) {
     try {
-      const result = await DatabaseService.select('transactions', {
+      const result = await DatabaseService.getAll('transactions', {
         filters: [{ column: 'lot_id', value: lotId }],
         orderBy: 'created_at.desc',
         ...options
@@ -649,7 +649,7 @@ class InventoryService extends EnhancedBaseService {
             customer_id,
             admission_date,
             status,
-            customers:customer_id(name)
+            customers(name)
           )
         `,
         filters: [{ column: 'inventory_lots.part_id', value: partId }],
@@ -657,7 +657,7 @@ class InventoryService extends EnhancedBaseService {
         ...options
       };
 
-      const result = await DatabaseService.select('transactions', query);
+      const result = await DatabaseService.getAll('transactions', query);
 
       return result;
     } catch (error) {

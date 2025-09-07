@@ -6,7 +6,6 @@ const express = require('express');
 const { asyncHandler } = require('../middleware/error-handler');
 const { requireStaff, requireManager } = require('../middleware/auth');
 const supabaseClient = require('../../db/supabase-client');
-const { isDemoToken, mockInventoryLots } = require('../../utils/mock-data');
 
 const router = express.Router();
 
@@ -26,68 +25,15 @@ router.get('/lots', asyncHandler(async (req, res) => {
     active_only = 'true'
   } = req.query;
 
-  const accessToken = req.headers.authorization?.replace('Bearer ', '') || req.accessToken;
-
-  // Use mock data for demo tokens
-  if (isDemoToken(accessToken)) {
-    let filteredLots = [...mockInventoryLots];
-
-    // Apply filters
-    if (customer_id && customer_id !== 'undefined') {
-      filteredLots = filteredLots.filter(lot => lot.customer_id === customer_id);
-    }
-    if (part_id && part_id !== 'undefined') {
-      filteredLots = filteredLots.filter(lot => lot.part_id === part_id);
-    }
-    if (storage_location_id && storage_location_id !== 'undefined') {
-      filteredLots = filteredLots.filter(lot => lot.storage_location_id === storage_location_id);
-    }
-    if (active_only === 'true') {
-      filteredLots = filteredLots.filter(lot => lot.active === true);
-    }
-
-    // Apply sorting
-    filteredLots.sort((a, b) => {
-      const aVal = a[orderBy] || a.created_at;
-      const bVal = b[orderBy] || b.created_at;
-      const comparison = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
-      return ascending === 'true' ? comparison : -comparison;
-    });
-
-    // Apply pagination
-    const start = parseInt(offset) || 0;
-    const count = parseInt(limit) || 100;
-    const paginatedLots = filteredLots.slice(start, start + count);
-
-    // Transform mock data to match expected format
-    const transformedData = paginatedLots.map(lot => ({
-      ...lot,
-      current_quantity: lot.quantity,
-      part_description: lot.parts?.description,
-      customer_name: lot.customers?.name,
-      customer_code: lot.customers?.code,
-      location_code: lot.storage_locations?.location_code,
-      location_description: lot.storage_locations?.description
-    }));
-
-    return res.json({
-      success: true,
-      data: transformedData,
-      count: filteredLots.length,
-      pagination: {
-        limit: parseInt(limit),
-        offset: parseInt(offset),
-        total: filteredLots.length
-      }
-    });
-  }
+  // REMOVED: Demo token bypass to force real database access
+  // Now all requests will use the real Supabase database with admin client
 
   try {
     const options = {
       select: `
         *,
         parts:part_id(id, description, material, unit_of_measure),
-        customers:customer_id(id, name, code),
+        customers(id, name, ein),
         storage_locations:storage_location_id(id, location_code, description),
         transactions(quantity)
       `,
@@ -97,15 +43,20 @@ router.get('/lots', asyncHandler(async (req, res) => {
       },
       limit: parseInt(limit),
       offset: parseInt(offset),
-      accessToken: accessToken
+      accessToken: req.accessToken
     };
 
-    // Add filters
+    // Add filters - handle undefined/null values properly
     const filters = [];
-    if (customer_id) filters.push({ column: 'customer_id', value: customer_id });
-    if (part_id) filters.push({ column: 'part_id', value: part_id });
-    if (storage_location_id) filters.push({ column: 'storage_location_id', value: storage_location_id });
-    if (active_only === 'true') filters.push({ column: 'active', value: true });
+    if (customer_id && customer_id !== 'undefined' && customer_id !== 'null') {
+      filters.push({ column: 'customer_id', value: customer_id });
+    }
+    if (part_id && part_id !== 'undefined' && part_id !== 'null') {
+      filters.push({ column: 'part_id', value: part_id });
+    }
+    if (storage_location_id && storage_location_id !== 'undefined' && storage_location_id !== 'null') {
+      filters.push({ column: 'storage_location_id', value: storage_location_id });
+    }
 
     if (filters.length > 0) {
       options.filters = filters;
@@ -133,7 +84,7 @@ router.get('/lots', asyncHandler(async (req, res) => {
         total_value: lot.total_value || (currentQuantity * (lot.unit_value || 0)),
         part_description: lot.parts?.description,
         customer_name: lot.customers?.name,
-        customer_code: lot.customers?.code,
+        customer_code: lot.customers?.ein,
         location_code: lot.storage_locations?.location_code,
         location_description: lot.storage_locations?.description
       };
@@ -172,13 +123,14 @@ router.get('/lots/:id', asyncHandler(async (req, res) => {
       {
         select: `
           *,
-          parts:part_id(id, description, material, unit_of_measure, customs_value),
-          customers:customer_id(id, name, code, country),
+          parts:part_id(id, description, material, unit_of_measure),
+          customers(id, name, ein),
           storage_locations:storage_location_id(id, location_code, description, zone, aisle, level, position),
-          transactions(id, quantity, transaction_type, transaction_date, reference_number, notes, created_at)
+          transactions(id, quantity, type, created_at, reference_number, notes)
         `,
         accessToken: req.accessToken
-      }
+      },
+      false  // Use RLS
     );
 
     if (!result.success) {
@@ -204,7 +156,7 @@ router.get('/lots/:id', asyncHandler(async (req, res) => {
       quantity: lot.quantity || currentQuantity,
       total_value: lot.total_value || (currentQuantity * (lot.unit_value || 0)),
       transaction_history: lot.transactions.sort((a, b) => 
-        new Date(b.transaction_date) - new Date(a.transaction_date)
+        new Date(b.created_at) - new Date(a.created_at)
       )
     };
 
@@ -227,29 +179,25 @@ router.get('/lots/:id', asyncHandler(async (req, res) => {
  */
 router.post('/lots', requireStaff, asyncHandler(async (req, res) => {
   const {
-    lot_number,
     part_id,
     customer_id,
     storage_location_id,
     initial_quantity,
     unit_value,
     unit_of_measure,
-    customs_value,
-    entry_date,
     expiration_date,
     notes
   } = req.body;
 
-  if (!lot_number || !part_id || !customer_id || !storage_location_id || !initial_quantity) {
+  if (!part_id || !customer_id || !storage_location_id || !initial_quantity) {
     return res.status(400).json({
       success: false,
-      error: 'Missing required fields: lot_number, part_id, customer_id, storage_location_id, initial_quantity'
+      error: 'Missing required fields: part_id, customer_id, storage_location_id, initial_quantity'
     });
   }
 
   try {
     const lotData = {
-      lot_number,
       part_id,
       customer_id,
       storage_location_id,
@@ -257,18 +205,16 @@ router.post('/lots', requireStaff, asyncHandler(async (req, res) => {
       unit_value: unit_value || 0,
       total_value: (initial_quantity * (unit_value || 0)),
       unit_of_measure,
-      customs_value,
-      entry_date: entry_date || new Date().toISOString(),
       expiration_date,
       notes,
-      active: true,
       created_by: req.user.id
     };
 
     const result = await supabaseClient.create(
       'inventory_lots',
       lotData,
-      { accessToken: req.accessToken }
+      { accessToken: req.accessToken },
+      false  // Use RLS
     );
 
     if (!result.success) {
@@ -279,17 +225,17 @@ router.post('/lots', requireStaff, asyncHandler(async (req, res) => {
     const transactionData = {
       lot_id: result.data.id,
       quantity: initial_quantity,
-      transaction_type: 'receipt',
-      transaction_date: lotData.entry_date,
+      type: 'receipt',
       reference_number: 'INITIAL',
-      notes: `Initial lot creation - ${lot_number}`,
+      notes: `Initial lot creation - ${new Date().toISOString()}`,
       created_by: req.user.id
     };
 
     await supabaseClient.create(
-      'inventory_transactions',
+      'transactions',
       transactionData,
-      { accessToken: req.accessToken }
+      { accessToken: req.accessToken },
+      false  // Use RLS
     );
 
     res.status(201).json({
@@ -328,7 +274,8 @@ router.put('/lots/:id', requireStaff, asyncHandler(async (req, res) => {
       'inventory_lots',
       id,
       updateData,
-      { accessToken: req.accessToken }
+      { accessToken: req.accessToken },
+      false  // Use RLS
     );
 
     res.json(result);
@@ -352,12 +299,12 @@ router.delete('/lots/:id', requireManager, asyncHandler(async (req, res) => {
     const result = await supabaseClient.update(
       'inventory_lots',
       id,
-      { 
-        active: false,
+      {
         updated_at: new Date().toISOString(),
         updated_by: req.user.id
       },
-      { accessToken: req.accessToken }
+      { accessToken: req.accessToken },
+      false  // Use RLS
     );
 
     res.json(result);
@@ -387,23 +334,23 @@ router.get('/transactions', asyncHandler(async (req, res) => {
   try {
     const filters = [];
     if (lot_id) filters.push({ column: 'lot_id', value: lot_id });
-    if (transaction_type) filters.push({ column: 'transaction_type', value: transaction_type });
-    if (start_date) filters.push({ column: 'transaction_date', value: start_date, operator: 'gte' });
-    if (end_date) filters.push({ column: 'transaction_date', value: end_date, operator: 'lte' });
+    if (transaction_type) filters.push({ column: 'type', value: transaction_type });
+    if (start_date) filters.push({ column: 'created_at', value: start_date, operator: 'gte' });
+    if (end_date) filters.push({ column: 'created_at', value: end_date, operator: 'lte' });
 
     const options = {
       select: `
         *,
-        inventory_lots:lot_id(id, lot_number, parts:part_id(description), customers:customer_id(name))
+        inventory_lots(id, parts(description), customers(name))
       `,
       filters: filters.length > 0 ? filters : undefined,
-      orderBy: { column: 'transaction_date', ascending: false },
+      orderBy: { column: 'created_at', ascending: false },
       limit: parseInt(limit),
       offset: parseInt(offset),
       accessToken: req.accessToken
     };
 
-    const result = await supabaseClient.getAll('inventory_transactions', options);
+    const result = await supabaseClient.getAll('transactions', options);
 
     res.json({
       success: true,
@@ -433,7 +380,6 @@ router.post('/transactions', requireStaff, asyncHandler(async (req, res) => {
     lot_id,
     quantity,
     transaction_type,
-    transaction_date,
     reference_number,
     notes
   } = req.body;
@@ -441,7 +387,7 @@ router.post('/transactions', requireStaff, asyncHandler(async (req, res) => {
   if (!lot_id || !quantity || !transaction_type) {
     return res.status(400).json({
       success: false,
-      error: 'Missing required fields: lot_id, quantity, transaction_type'
+      error: 'Missing required fields: lot_id, quantity, type'
     });
   }
 
@@ -449,17 +395,17 @@ router.post('/transactions', requireStaff, asyncHandler(async (req, res) => {
     const transactionData = {
       lot_id,
       quantity: parseFloat(quantity),
-      transaction_type,
-      transaction_date: transaction_date || new Date().toISOString(),
+      type: transaction_type,
       reference_number,
       notes,
       created_by: req.user.id
     };
 
     const result = await supabaseClient.create(
-      'inventory_transactions',
+      'transactions',
       transactionData,
-      { accessToken: req.accessToken }
+      { accessToken: req.accessToken },
+      false  // Use RLS
     );
 
     res.status(201).json(result);

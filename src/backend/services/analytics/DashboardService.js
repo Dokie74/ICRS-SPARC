@@ -70,7 +70,7 @@ class DashboardService extends BaseService {
   async getInventoryMetrics(options = {}) {
     try {
       // Get active inventory lots with part and customer info (preserves original query structure)
-      const result = await DatabaseService.select('inventory_lots', {
+      const result = await DatabaseService.getAll('inventory_lots', {
         select: `
           id,
           quantity,
@@ -164,7 +164,7 @@ class DashboardService extends BaseService {
    */
   async getPreadmissionMetrics(options = {}) {
     try {
-      const result = await DatabaseService.select('preadmissions', {
+      const result = await DatabaseService.getAll('preadmissions', {
         select: `
           id,
           "admissionId",
@@ -220,7 +220,7 @@ class DashboardService extends BaseService {
    */
   async getPreshipmentMetrics(options = {}) {
     try {
-      const result = await DatabaseService.select('preshipments', {
+      const result = await DatabaseService.getAll('preshipments', {
         select: `
           id,
           "shipmentId",
@@ -273,7 +273,7 @@ class DashboardService extends BaseService {
    */
   async getRecentActivity(options = {}) {
     try {
-      const result = await DatabaseService.select('permission_audit_log', {
+      const result = await DatabaseService.getAll('permission_audit_log', {
         select: `
           id,
           action,
@@ -320,7 +320,7 @@ class DashboardService extends BaseService {
       const alerts = [];
 
       // Check for low inventory - support both schema types (preserves schema flexibility)
-      const lowInventoryResult = await DatabaseService.select('inventory_lots', {
+      const lowInventoryResult = await DatabaseService.getAll('inventory_lots', {
         select: `
           id,
           quantity,
@@ -351,7 +351,7 @@ class DashboardService extends BaseService {
       const threeDaysAgo = new Date();
       threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
 
-      const overdueAuditsResult = await DatabaseService.select('preadmissions', {
+      const overdueAuditsResult = await DatabaseService.getAll('preadmissions', {
         select: 'id, "admissionId", arrival_date',
         filters: [
           { column: 'status', value: 'Arrived - Pending Audit' },
@@ -372,7 +372,7 @@ class DashboardService extends BaseService {
       }
 
       // Check for upcoming quarterly pricing updates (Shanghai Steel Price Index)
-      const pricingUpdatesResult = await DatabaseService.select('pricing_adjustments', {
+      const pricingUpdatesResult = await DatabaseService.getAll('pricing_adjustments', {
         select: 'id, quarter, effective_date, status',
         filters: [{ column: 'status', value: 'draft' }],
         limit: 5,
@@ -407,7 +407,7 @@ class DashboardService extends BaseService {
    */
   async getStorageMetrics(options = {}) {
     try {
-      const result = await DatabaseService.select('storage_locations', {
+      const result = await DatabaseService.getAll('storage_locations', {
         select: `
           id,
           location_code,
@@ -455,7 +455,7 @@ class DashboardService extends BaseService {
    */
   async getMaterialPricingMetrics(options = {}) {
     try {
-      const result = await DatabaseService.select('material_indices', {
+      const result = await DatabaseService.getAll('material_indices', {
         select: 'material, price_usd_per_mt, price_date, index_source',
         orderBy: 'price_date.desc',
         limit: 20,
@@ -503,7 +503,7 @@ class DashboardService extends BaseService {
         date.setDate(date.getDate() - i);
         
         // Query inventory lots created up to this date
-        const lotsResult = await DatabaseService.select('inventory_lots', {
+        const lotsResult = await DatabaseService.getAll('inventory_lots', {
           select: `
             id,
             current_quantity,
@@ -553,7 +553,7 @@ class DashboardService extends BaseService {
    */
   async getTransactionBasedTrends(options = {}) {
     try {
-      const result = await DatabaseService.select('transactions', {
+      const result = await DatabaseService.getAll('transactions', {
         select: `
           id,
           transaction_date,
@@ -628,7 +628,7 @@ class DashboardService extends BaseService {
    */
   async getMaterialBreakdownData(options = {}) {
     try {
-      const result = await DatabaseService.select('inventory_lots', {
+      const result = await DatabaseService.getAll('inventory_lots', {
         select: `
           current_quantity,
           parts!inner (

@@ -37,8 +37,8 @@ class SupabaseClient {
 
   // Get client with user context for RLS
   getClientForUser(accessToken = null) {
-    if (accessToken && !accessToken.startsWith('demo-token-for-testing-only-')) {
-      // Only set up authenticated client for real JWT tokens
+    if (accessToken) {
+      // Set up authenticated client for JWT tokens
       const clientWithAuth = createClient(
         process.env.SUPABASE_URL,
         process.env.SUPABASE_ANON_KEY,
@@ -56,7 +56,7 @@ class SupabaseClient {
       );
       return clientWithAuth;
     }
-    // For demo tokens or no token, use anonymous client
+    // For no token, use anonymous client
     return this.anonClient;
   }
 
@@ -114,7 +114,7 @@ class SupabaseClient {
       }
       
       // Apply ordering
-      if (options.orderBy) {
+      if (options.orderBy && options.orderBy.column) {
         query = query.order(options.orderBy.column, { 
           ascending: options.orderBy.ascending ?? true 
         });
@@ -303,21 +303,6 @@ class SupabaseClient {
   // Authentication helpers
   async getCurrentUser(accessToken) {
     try {
-      // Handle demo tokens
-      if (accessToken && accessToken.startsWith('demo-token-for-testing-only-')) {
-        return {
-          success: true,
-          data: {
-            id: '550e8400-e29b-41d4-a716-446655440000',
-            email: 'demo@test.com',
-            user_metadata: {
-              full_name: 'Demo User',
-              role: 'admin'
-            }
-          }
-        };
-      }
-
       const client = this.getClientForUser(accessToken);
       const { data: { user }, error } = await client.auth.getUser(accessToken);
       
@@ -332,21 +317,6 @@ class SupabaseClient {
 
   async verifyAccessToken(accessToken) {
     try {
-      // Handle demo tokens in development mode
-      if (accessToken && accessToken.startsWith('demo-token-for-testing-only-')) {
-        // Return mock user for demo tokens
-        const mockUser = {
-          id: 'demo-user-123',
-          email: 'demo@test.com',
-          user_metadata: {
-            full_name: 'Demo User',
-            role: 'admin'
-          }
-        };
-        return { success: true, data: mockUser };
-      }
-
-      // For real JWT tokens, verify with Supabase
       if (!accessToken) {
         throw new Error('No access token provided');
       }

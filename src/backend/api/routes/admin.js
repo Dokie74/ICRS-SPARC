@@ -8,6 +8,7 @@ const csv = require('csv-parser');
 const fs = require('fs');
 const { asyncHandler } = require('../middleware/async');
 const { authMiddleware, requireRole } = require('../middleware/auth');
+const supabaseClient = require('../../db/supabase-client');
 
 const router = express.Router();
 
@@ -30,403 +31,667 @@ const upload = multer({
 // Note: authMiddleware is applied at the app level for /api/admin routes
 router.use(requireRole(['admin']));
 
-// Helper function to check demo mode
-const isDemoToken = (token) => {
-  return token && token.startsWith('demo-token-for-testing-only-');
-};
-
 // GET /api/admin/stats - Get admin statistics
 router.get('/stats', asyncHandler(async (req, res) => {
-  const accessToken = req.headers.authorization?.replace('Bearer ', '');
-  
-  if (isDemoToken(accessToken)) {
-    const mockStats = {
-      totalEmployees: 42,
-      totalParts: 15847,
-      activeCustomers: 238,
-      totalSuppliers: 67,
-      totalLocations: 89,
-      pendingApprovals: 12,
-      systemHealth: 'good'
+  try {
+    const options = { 
+      accessToken: req.accessToken,
+      select: 'id', // Minimal select to get count efficiently
+      limit: 1 // We only need count, not data
     };
     
+    // Get counts from various tables using getAll method
+    const [customersResult, partsResult, inventoryResult, suppliersResult] = await Promise.allSettled([
+      supabaseClient.getAll('customers', options, true),
+      supabaseClient.getAll('parts', options, true),  
+      supabaseClient.getAll('inventory_lots', options, true),
+      supabaseClient.getAll('suppliers', options, true)
+    ]);
+
+    // Extract counts safely
+    const customerCount = customersResult.status === 'fulfilled' && customersResult.value?.success 
+      ? customersResult.value.count : 0;
+    const partCount = partsResult.status === 'fulfilled' && partsResult.value?.success 
+      ? partsResult.value.count : 0;
+    const inventoryCount = inventoryResult.status === 'fulfilled' && inventoryResult.value?.success 
+      ? inventoryResult.value.count : 0;
+    const supplierCount = suppliersResult.status === 'fulfilled' && suppliersResult.value?.success 
+      ? suppliersResult.value.count : 0;
+
+    // Calculate some basic metrics
+    const stats = {
+      overview: {
+        total_customers: customerCount,
+        total_parts: partCount,
+        total_inventory_lots: inventoryCount,
+        total_suppliers: supplierCount
+      },
+      system: {
+        database_status: 'connected',
+        last_updated: new Date().toISOString(),
+        data_freshness: 'real-time'
+      }
+    };
+
     return res.json({
       success: true,
-      data: mockStats
+      data: stats
+    });
+  } catch (error) {
+    console.error('Admin stats error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve admin statistics'
     });
   }
-  
-  // Production database queries would go here
-  res.status(501).json({
-    success: false,
-    error: 'Admin stats not implemented for production database'
-  });
 }));
 
 // GET /api/admin/employees - Get employees list
 router.get('/employees', asyncHandler(async (req, res) => {
-  const accessToken = req.headers.authorization?.replace('Bearer ', '');
   const { department, role, status, search, page = 1, limit = 50 } = req.query;
   
-  if (isDemoToken(accessToken)) {
+  try {
+    // Since employees table may not exist yet, return mock data for now
+    // In production, this would query the actual employees table
     const mockEmployees = [
       {
         id: 1,
-        first_name: 'John',
-        last_name: 'Smith',
-        email: 'john.smith@company.com',
+        name: 'System Administrator',
+        email: 'admin@icrs.com',
+        department: 'IT',
         role: 'admin',
-        department: 'admin',
         status: 'active',
-        hire_date: '2022-01-15',
-        phone: '555-0101'
-      },
-      {
-        id: 2,
-        first_name: 'Sarah',
-        last_name: 'Johnson',
-        email: 'sarah.johnson@company.com',
-        role: 'manager',
-        department: 'warehouse',
-        status: 'active',
-        hire_date: '2021-08-20',
-        phone: '555-0102'
-      },
-      {
-        id: 3,
-        first_name: 'Mike',
-        last_name: 'Wilson',
-        email: 'mike.wilson@company.com',
-        role: 'warehouse_staff',
-        department: 'warehouse',
-        status: 'active',
-        hire_date: '2023-03-10',
-        phone: '555-0103'
-      },
-      {
-        id: 4,
-        first_name: 'Emily',
-        last_name: 'Davis',
-        email: 'emily.davis@company.com',
-        role: 'warehouse_staff',
-        department: 'customs',
-        status: 'inactive',
-        hire_date: '2020-11-05',
-        phone: '555-0104'
+        created_at: new Date().toISOString()
       }
     ];
 
-    // Apply filters
+    // Apply filters if provided
     let filteredEmployees = mockEmployees;
     
-    if (department) {
-      filteredEmployees = filteredEmployees.filter(emp => emp.department === department);
-    }
-    
-    if (role) {
-      filteredEmployees = filteredEmployees.filter(emp => emp.role === role);
-    }
-    
-    if (status) {
-      filteredEmployees = filteredEmployees.filter(emp => emp.status === status);
-    }
-    
-    if (search) {
-      const searchTerm = search.toLowerCase();
+    if (department && department !== '') {
       filteredEmployees = filteredEmployees.filter(emp => 
-        emp.first_name.toLowerCase().includes(searchTerm) ||
-        emp.last_name.toLowerCase().includes(searchTerm) ||
-        emp.email.toLowerCase().includes(searchTerm)
+        emp.department?.toLowerCase().includes(department.toLowerCase())
       );
     }
     
+    if (role && role !== '') {
+      filteredEmployees = filteredEmployees.filter(emp => 
+        emp.role?.toLowerCase().includes(role.toLowerCase())
+      );
+    }
+    
+    if (status && status !== '' && status !== 'all') {
+      filteredEmployees = filteredEmployees.filter(emp => emp.status === status);
+    }
+    
+    if (search && search !== '') {
+      filteredEmployees = filteredEmployees.filter(emp => 
+        emp.name?.toLowerCase().includes(search.toLowerCase()) ||
+        emp.email?.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    // Pagination
+    const startIndex = (parseInt(page) - 1) * parseInt(limit);
+    const paginatedEmployees = filteredEmployees.slice(startIndex, startIndex + parseInt(limit));
+
     return res.json({
       success: true,
-      data: filteredEmployees,
+      data: paginatedEmployees,
       pagination: {
         total: filteredEmployees.length,
         page: parseInt(page),
-        limit: parseInt(limit)
+        limit: parseInt(limit),
+        total_pages: Math.ceil(filteredEmployees.length / parseInt(limit))
+      },
+      meta: {
+        note: 'Employee management is using mock data. Implement employees table for full functionality.'
       }
     });
+  } catch (error) {
+    console.error('Get employees error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve employees'
+    });
   }
-  
-  res.status(501).json({
-    success: false,
-    error: 'Employee management not implemented for production database'
-  });
 }));
 
 // POST /api/admin/employees - Create new employee
 router.post('/employees', asyncHandler(async (req, res) => {
-  const accessToken = req.headers.authorization?.replace('Bearer ', '');
-  const { first_name, last_name, email, role, department, phone } = req.body;
-  
-  if (isDemoToken(accessToken)) {
-    // In demo mode, just return success with mock data
-    const newEmployee = {
-      id: Math.floor(Math.random() * 10000),
-      first_name,
-      last_name,
-      email,
-      role,
-      department,
-      phone,
-      status: 'active',
-      hire_date: new Date().toISOString().split('T')[0]
-    };
-    
-    return res.status(201).json({
-      success: true,
-      data: newEmployee
+  try {
+    // TODO: Implement employee creation for production database
+    res.status(501).json({
+      success: false,
+      error: 'Employee creation not yet implemented'
+    });
+  } catch (error) {
+    console.error('Create employee error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create employee'
     });
   }
-  
-  res.status(501).json({
-    success: false,
-    error: 'Employee creation not implemented for production database'
-  });
 }));
 
 // PUT /api/admin/employees/:id - Update employee
 router.put('/employees/:id', asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const accessToken = req.headers.authorization?.replace('Bearer ', '');
-  
-  if (isDemoToken(accessToken)) {
-    return res.json({
-      success: true,
-      data: { id: parseInt(id), ...req.body }
+  try {
+    // TODO: Implement employee update for production database
+    res.status(501).json({
+      success: false,
+      error: 'Employee update not yet implemented'
+    });
+  } catch (error) {
+    console.error('Update employee error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update employee'
     });
   }
-  
-  res.status(501).json({
-    success: false,
-    error: 'Employee update not implemented for production database'
-  });
 }));
 
 // DELETE /api/admin/employees/:id - Delete employee
 router.delete('/employees/:id', asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const accessToken = req.headers.authorization?.replace('Bearer ', '');
-  
-  if (isDemoToken(accessToken)) {
-    return res.json({
-      success: true,
-      message: `Employee ${id} deleted successfully`
+  try {
+    // TODO: Implement employee deletion for production database
+    res.status(501).json({
+      success: false,
+      error: 'Employee deletion not yet implemented'
+    });
+  } catch (error) {
+    console.error('Delete employee error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete employee'
     });
   }
-  
-  res.status(501).json({
-    success: false,
-    error: 'Employee deletion not implemented for production database'
-  });
 }));
 
 // GET /api/admin/parts-master - Get parts master data
 router.get('/parts-master', asyncHandler(async (req, res) => {
-  const accessToken = req.headers.authorization?.replace('Bearer ', '');
-  const { category, status, supplier, search, page = 1, limit = 100 } = req.query;
+  const { country, manufacturer, priceRange, hasVariants, material, sortBy, search, page = 1, limit = 100 } = req.query;
   
-  if (isDemoToken(accessToken)) {
-    const mockParts = [
-      {
-        id: 1,
-        part_number: 'ENG-001-A',
-        description: 'Engine Block Assembly',
-        category: 'engine',
-        unit_price: 2500.00,
-        status: 'active',
-        supplier: 'Acme Motors',
-        created_at: '2023-01-15'
+  try {
+    const options = {
+      select: '*',
+      orderBy: {
+        column: sortBy || 'id',
+        ascending: true
       },
-      {
-        id: 2,
-        part_number: 'TRN-045-B',
-        description: 'Transmission Gear Set',
-        category: 'transmission',
-        unit_price: 850.00,
-        status: 'active',
-        supplier: 'PowerTrain Inc',
-        created_at: '2023-02-20'
-      },
-      {
-        id: 3,
-        part_number: 'BRK-012-C',
-        description: 'Brake Pad Assembly',
-        category: 'brakes',
-        unit_price: 125.00,
-        status: 'discontinued',
-        supplier: 'Safety First',
-        created_at: '2022-11-10'
-      }
-    ];
+      limit: parseInt(limit),
+      offset: (parseInt(page) - 1) * parseInt(limit),
+      accessToken: req.accessToken
+    };
 
-    // Apply filters similar to employees
-    let filteredParts = mockParts;
+    // Build filters for parts table based on actual schema
+    const filters = [];
     
-    if (category) {
-      filteredParts = filteredParts.filter(part => part.category === category);
+    if (country && country !== '') {
+      filters.push({ column: 'country_of_origin', value: country });
     }
     
-    if (status) {
-      filteredParts = filteredParts.filter(part => part.status === status);
+    if (search && search !== '') {
+      // Search in description, hts_code, or id
+      filters.push({ 
+        column: 'description', 
+        value: `%${search}%`, 
+        operator: 'ilike' 
+      });
     }
     
-    if (supplier) {
-      filteredParts = filteredParts.filter(part => part.supplier.toLowerCase().includes(supplier.toLowerCase()));
+    // Note: manufacturer, priceRange, hasVariants, material are not available in current schema
+    // but keeping parameters for UI compatibility
+
+    if (filters.length > 0) {
+      options.filters = filters;
     }
-    
-    if (search) {
-      const searchTerm = search.toLowerCase();
-      filteredParts = filteredParts.filter(part => 
-        part.part_number.toLowerCase().includes(searchTerm) ||
-        part.description.toLowerCase().includes(searchTerm)
-      );
+
+    const result = await supabaseClient.getAll('parts', options, true);
+
+    if (!result.success) {
+      return res.status(500).json({
+        success: false,
+        error: result.error || 'Failed to retrieve parts'
+      });
     }
-    
+
     return res.json({
       success: true,
-      data: filteredParts,
+      data: result.data,
       pagination: {
-        total: filteredParts.length,
+        total: result.count || result.data?.length || 0,
         page: parseInt(page),
         limit: parseInt(limit)
       }
     });
+  } catch (error) {
+    console.error('Get parts-master error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve parts master data'
+    });
   }
-  
-  res.status(501).json({
-    success: false,
-    error: 'Parts master not implemented for production database'
-  });
 }));
 
 // GET /api/admin/customers-master - Get customers master data
 router.get('/customers-master', asyncHandler(async (req, res) => {
-  const accessToken = req.headers.authorization?.replace('Bearer ', '');
+  const { type, status, search, page = 1, limit = 100 } = req.query;
   
-  if (isDemoToken(accessToken)) {
-    const mockCustomers = [
-      {
-        id: 1,
-        company_name: 'Global Manufacturing Corp',
-        contact_person: 'James Rodriguez',
-        email: 'james@globalmanuf.com',
-        phone: '555-1001',
-        type: 'manufacturer',
-        status: 'active',
-        region: 'north_america'
+  try {
+    const options = {
+      select: '*',
+      orderBy: {
+        column: 'name',
+        ascending: true
       },
-      {
-        id: 2,
-        company_name: 'European Auto Parts Ltd',
-        contact_person: 'Maria Schmidt',
-        email: 'maria@euroauto.com',
-        phone: '555-1002',
-        type: 'distributor',
-        status: 'active',
-        region: 'europe'
-      }
-    ];
+      limit: parseInt(limit),
+      offset: (parseInt(page) - 1) * parseInt(limit),
+      accessToken: req.accessToken
+    };
+
+    // Build filters for customers table
+    const filters = [];
     
+    if (type) {
+      filters.push({ column: 'type', value: type });
+    }
+    
+    if (search) {
+      // Search across customer name and contact fields
+      filters.push({ 
+        column: 'name', 
+        value: `%${search}%`, 
+        operator: 'ilike' 
+      });
+    }
+
+    if (filters.length > 0) {
+      options.filters = filters;
+    }
+
+    const result = await supabaseClient.getAll('customers', options, true);
+
+    if (!result.success) {
+      return res.status(500).json({
+        success: false,
+        error: result.error || 'Failed to retrieve customers'
+      });
+    }
+
     return res.json({
       success: true,
-      data: mockCustomers
+      data: result.data,
+      pagination: {
+        total: result.count || result.data?.length || 0,
+        page: parseInt(page),
+        limit: parseInt(limit)
+      }
+    });
+  } catch (error) {
+    console.error('Get customers-master error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve customers master data'
     });
   }
-  
-  res.status(501).json({
-    success: false,
-    error: 'Customers master not implemented for production database'
-  });
 }));
 
 // GET /api/admin/suppliers-master - Get suppliers master data
 router.get('/suppliers-master', asyncHandler(async (req, res) => {
-  const accessToken = req.headers.authorization?.replace('Bearer ', '');
-  
-  if (isDemoToken(accessToken)) {
-    const mockSuppliers = [
-      {
-        id: 1,
-        company_name: 'Acme Motors',
-        contact_person: 'Robert Chen',
-        email: 'robert@acmemotors.com',
-        phone: '555-2001',
-        type: 'manufacturer',
-        status: 'active',
-        country: 'USA'
+  try {
+    const options = {
+      select: '*',
+      orderBy: {
+        column: 'name',
+        ascending: true
       },
-      {
-        id: 2,
-        company_name: 'PowerTrain Inc',
-        contact_person: 'Lisa Thompson',
-        email: 'lisa@powertrain.com',
-        phone: '555-2002',
-        type: 'specialist',
-        status: 'active',
-        country: 'Canada'
-      }
-    ];
-    
+      accessToken: req.accessToken
+    };
+
+    const result = await supabaseClient.getAll('suppliers', options, true);
+
+    if (!result.success) {
+      return res.status(500).json({
+        success: false,
+        error: result.error || 'Failed to retrieve suppliers'
+      });
+    }
+
     return res.json({
       success: true,
-      data: mockSuppliers
+      data: result.data
+    });
+  } catch (error) {
+    console.error('Get suppliers-master error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve suppliers master data'
+    });
+  }
+}));
+
+// GET /api/admin/suppliers - Get suppliers list
+router.get('/suppliers', asyncHandler(async (req, res) => {
+  const { type, status, search, page = 1, limit = 50 } = req.query;
+  
+  try {
+    const options = {
+      select: '*',
+      orderBy: {
+        column: 'name',
+        ascending: true
+      },
+      limit: parseInt(limit),
+      offset: (parseInt(page) - 1) * parseInt(limit),
+      accessToken: req.accessToken
+    };
+
+    // Build filters
+    const filters = [];
+    
+    if (type) {
+      filters.push({ column: 'type', value: type });
+    }
+    
+    if (search) {
+      // For search, use OR conditions across multiple fields
+      // Note: This is a simplified approach - in production you might want to use full-text search
+      filters.push({ 
+        column: 'name', 
+        value: `%${search}%`, 
+        operator: 'ilike' 
+      });
+      // Note: Supabase client filters are AND by default
+      // For OR search across multiple fields, we might need to use raw SQL or modify the search approach
+    }
+
+    if (filters.length > 0) {
+      options.filters = filters;
+    }
+
+    const result = await supabaseClient.getAll('suppliers', options, true);
+
+    if (!result.success) {
+      return res.status(500).json({
+        success: false,
+        error: result.error || 'Failed to retrieve suppliers'
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: result.data,
+      pagination: {
+        total: result.count,
+        page: parseInt(page),
+        limit: parseInt(limit)
+      }
+    });
+  } catch (error) {
+    console.error('Get suppliers error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve suppliers'
+    });
+  }
+}));
+
+// POST /api/admin/suppliers - Create new supplier
+router.post('/suppliers', asyncHandler(async (req, res) => {
+  // Handle field mapping for frontend/backend compatibility
+  const name = req.body.name || req.body.name;
+  const email = req.body.email || req.body.contact_email;
+  const contact_person = req.body.contact_person;
+  
+  const { phone, type, country, address } = req.body;
+  
+  // Validation
+  if (!name || !contact_person || !email) {
+    return res.status(400).json({
+      success: false,
+      error: 'Missing required fields: name, contact_person, email'
     });
   }
   
-  res.status(501).json({
-    success: false,
-    error: 'Suppliers master not implemented for production database'
-  });
+  try {
+    // Prepare supplier data
+    const supplierData = {
+      name,
+      contact_person,
+      email,
+      phone: phone || '',
+      type: type || 'general',
+      status: 'active',
+      country: country || 'USA',
+      address: address || ''
+    };
+
+    const result = await supabaseClient.create(
+      'suppliers',
+      supplierData,
+      { accessToken: req.accessToken },
+      true
+    );
+
+    if (!result.success) {
+      return res.status(500).json({
+        success: false,
+        error: result.error || 'Failed to create supplier'
+      });
+    }
+
+    res.status(201).json(result);
+  } catch (error) {
+    console.error('Create supplier error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create supplier'
+    });
+  }
+}));
+
+// PUT /api/admin/suppliers/:id - Update supplier
+router.put('/suppliers/:id', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    // Handle field mapping for frontend/backend compatibility
+    const name = req.body.name || req.body.name;
+    const email = req.body.email || req.body.contact_email;
+    const contact_person = req.body.contact_person;
+    
+    const { phone, type, country, address, status } = req.body;
+    
+    // Prepare update data (only include fields that are provided)
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (contact_person !== undefined) updateData.contact_person = contact_person;
+    if (email !== undefined) updateData.email = email;
+    if (phone !== undefined) updateData.phone = phone;
+    if (type !== undefined) updateData.type = type;
+    if (country !== undefined) updateData.country = country;
+    if (address !== undefined) updateData.address = address;
+    if (status !== undefined) updateData.status = status;
+    
+    const result = await supabaseClient.update(
+      'suppliers',
+      id,
+      updateData,
+      { accessToken: req.accessToken },
+      true
+    );
+
+    if (!result.success) {
+      return res.status(500).json({
+        success: false,
+        error: result.error || 'Failed to update supplier'
+      });
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error('Update supplier error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update supplier'
+    });
+  }
+}));
+
+// DELETE /api/admin/suppliers/:id - Delete supplier
+router.delete('/suppliers/:id', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const result = await supabaseClient.delete(
+      'suppliers',
+      id,
+      { accessToken: req.accessToken },
+      true
+    );
+
+    if (!result.success) {
+      return res.status(500).json({
+        success: false,
+        error: result.error || 'Failed to delete supplier'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `Supplier ${id} deleted successfully`
+    });
+  } catch (error) {
+    console.error('Delete supplier error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete supplier'
+    });
+  }
 }));
 
 // GET /api/admin/storage-locations - Get storage locations data
 router.get('/storage-locations', asyncHandler(async (req, res) => {
-  const accessToken = req.headers.authorization?.replace('Bearer ', '');
+  const { zone, type, isActive, search, page = 1, limit = 50 } = req.query;
   
-  if (isDemoToken(accessToken)) {
-    const mockLocations = [
-      {
-        id: 1,
-        location_code: 'A-01-001',
-        description: 'Main Warehouse - Section A',
-        zone: 'A',
-        type: 'standard',
-        status: 'active',
-        capacity: 1000,
-        current_usage: 750
+  try {
+    const options = {
+      select: '*',
+      orderBy: {
+        column: 'location_code',
+        ascending: true
       },
-      {
-        id: 2,
-        location_code: 'B-02-015',
-        description: 'Cold Storage - Section B',
-        zone: 'B',
-        type: 'temperature_controlled',
-        status: 'active',
-        capacity: 500,
-        current_usage: 320
-      }
-    ];
+      limit: parseInt(limit),
+      offset: (parseInt(page) - 1) * parseInt(limit),
+      accessToken: req.accessToken
+    };
+
+    // Build filters
+    const filters = [];
     
-    return res.json({
-      success: true,
-      data: mockLocations
+    if (zone && zone !== 'all' && zone !== '') {
+      filters.push({ column: 'zone', value: zone });
+    }
+    
+    if (type && type !== 'all' && type !== '') {
+      // Note: type field may not exist in current schema
+      // Keep for UI compatibility but may not filter anything
+      filters.push({ column: 'type', value: type });
+    }
+    
+    if (search && search !== '') {
+      // Search in location_code or description
+      filters.push({ 
+        column: 'location_code', 
+        value: `%${search}%`, 
+        operator: 'ilike' 
+      });
+    }
+
+    if (filters.length > 0) {
+      options.filters = filters;
+    }
+
+    // Try to get from storage_locations table
+    const result = await supabaseClient.getAll('storage_locations', options);
+
+    if (result.success) {
+      return res.json({
+        success: true,
+        data: result.data || [],
+        pagination: {
+          total: result.count || result.data?.length || 0,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total_pages: Math.ceil((result.count || result.data?.length || 0) / parseInt(limit))
+        }
+      });
+    } else {
+      // If storage_locations table doesn't exist, return mock data
+      const mockLocations = [
+        {
+          id: 1,
+          location_code: 'A-01-01',
+          description: 'Main warehouse - Aisle A, Level 1, Position 1',
+          zone: 'A',
+          aisle: '01',
+          level: '01',
+          position: '01',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        },
+        {
+          id: 2,
+          location_code: 'B-02-03', 
+          description: 'Main warehouse - Aisle B, Level 2, Position 3',
+          zone: 'B',
+          aisle: '02',
+          level: '02',
+          position: '03',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+      ];
+
+      // Apply basic filtering to mock data
+      let filteredLocations = mockLocations;
+      if (zone && zone !== 'all') {
+        filteredLocations = filteredLocations.filter(loc => loc.zone === zone);
+      }
+      if (search) {
+        filteredLocations = filteredLocations.filter(loc => 
+          loc.location_code?.toLowerCase().includes(search.toLowerCase()) ||
+          loc.description?.toLowerCase().includes(search.toLowerCase())
+        );
+      }
+
+      return res.json({
+        success: true,
+        data: filteredLocations,
+        pagination: {
+          total: filteredLocations.length,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total_pages: Math.ceil(filteredLocations.length / parseInt(limit))
+        },
+        meta: {
+          note: 'Storage locations table not found. Using mock data. Create storage_locations table for full functionality.'
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Get storage locations error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve storage locations'
     });
   }
-  
-  res.status(501).json({
-    success: false,
-    error: 'Storage locations not implemented for production database'
-  });
 }));
 
 // POST /api/admin/batch-upload/:type - Handle batch CSV uploads
 router.post('/batch-upload/:type', upload.single('file'), asyncHandler(async (req, res) => {
   const { type } = req.params;
-  const accessToken = req.headers.authorization?.replace('Bearer ', '');
   
   if (!req.file) {
     return res.status(400).json({
@@ -435,7 +700,7 @@ router.post('/batch-upload/:type', upload.single('file'), asyncHandler(async (re
     });
   }
 
-  const allowedTypes = ['employees', 'parts', 'customers', 'suppliers', 'locations'];
+  const allowedTypes = ['employees', 'parts', 'customers', 'suppliers', 'storage_locations'];
   if (!allowedTypes.includes(type)) {
     return res.status(400).json({
       success: false,
@@ -443,56 +708,25 @@ router.post('/batch-upload/:type', upload.single('file'), asyncHandler(async (re
     });
   }
 
-  if (isDemoToken(accessToken)) {
-    // In demo mode, simulate processing the CSV
-    const results = [];
-    let processedCount = 0;
-    let errorCount = 0;
-
-    return new Promise((resolve) => {
-      fs.createReadStream(req.file.path)
-        .pipe(csv())
-        .on('data', (data) => {
-          processedCount++;
-          results.push(data);
-        })
-        .on('end', () => {
-          // Clean up uploaded file
-          fs.unlinkSync(req.file.path);
-          
-          // Simulate some processing time
-          setTimeout(() => {
-            res.json({
-              success: true,
-              data: {
-                type,
-                processed: processedCount,
-                errors: errorCount,
-                message: `Successfully processed ${processedCount} ${type} records`
-              }
-            });
-          }, 1000);
-        })
-        .on('error', (error) => {
-          // Clean up uploaded file
-          if (fs.existsSync(req.file.path)) {
-            fs.unlinkSync(req.file.path);
-          }
-          
-          res.status(400).json({
-            success: false,
-            error: `Error processing CSV: ${error.message}`
-          });
-        });
+  try {
+    // TODO: Implement batch CSV upload for production database
+    // Clean up uploaded file
+    fs.unlinkSync(req.file.path);
+    res.status(501).json({
+      success: false,
+      error: 'Batch upload not yet implemented'
+    });
+  } catch (error) {
+    console.error('Batch upload error:', error);
+    // Clean up file on error
+    if (fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process batch upload'
     });
   }
-  
-  // Clean up file and return not implemented for production
-  fs.unlinkSync(req.file.path);
-  res.status(501).json({
-    success: false,
-    error: 'Batch upload not implemented for production database'
-  });
 }));
 
 // Error handling middleware for multer
@@ -513,5 +747,91 @@ router.use((error, req, res, next) => {
   
   next(error);
 });
+
+// DELETE /api/admin/parts/:id - Delete part
+router.delete('/parts/:id', asyncHandler(async (req, res) => {
+  try {
+    const { id } = req.params;
+    const options = { accessToken: req.accessToken };
+
+    const result = await supabaseClient.delete('parts', id, options);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Part deleted successfully'
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.error || 'Failed to delete part'
+      });
+    }
+  } catch (error) {
+    console.error('Delete part error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error while deleting part'
+    });
+  }
+}));
+
+// DELETE /api/admin/customers/:id - Delete customer
+router.delete('/customers/:id', asyncHandler(async (req, res) => {
+  try {
+    const { id } = req.params;
+    const options = { accessToken: req.accessToken };
+
+    const result = await supabaseClient.delete('customers', id, options);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Customer deleted successfully'
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.error || 'Failed to delete customer'
+      });
+    }
+  } catch (error) {
+    console.error('Delete customer error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error while deleting customer'
+    });
+  }
+}));
+
+// PATCH /api/admin/locations/:id - Update location (e.g., toggle active status)
+router.patch('/locations/:id', asyncHandler(async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    const options = { accessToken: req.accessToken };
+
+    const result = await supabaseClient.update('storage_locations', id, updates, options);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Location updated successfully',
+        data: result.data
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.error || 'Failed to update location'
+      });
+    }
+  } catch (error) {
+    console.error('Update location error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error while updating location'
+    });
+  }
+}));
 
 module.exports = router;

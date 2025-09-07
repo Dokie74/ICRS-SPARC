@@ -29,21 +29,6 @@ async function authMiddleware(req, res, next) {
       });
     }
 
-    // Handle demo tokens in development mode
-    if (accessToken.startsWith('demo-token-for-testing-only-')) {
-      // Demo mode - create mock user for testing
-      req.user = {
-        id: '550e8400-e29b-41d4-a716-446655440000',
-        email: 'demo@test.com',
-        user_metadata: {
-          full_name: 'Demo User',
-          role: 'admin'
-        }
-      };
-      req.accessToken = accessToken;
-      req.supabaseClient = supabaseClient.getClientForUser();
-      return next();
-    }
 
     // Verify the access token with Supabase for real tokens
     const userResult = await supabaseClient.verifyAccessToken(accessToken);
@@ -85,27 +70,13 @@ async function optionalAuthMiddleware(req, res, next) {
       const accessToken = authHeader.substring(7);
       
       if (accessToken) {
-        // Handle demo tokens in development mode
-        if (accessToken.startsWith('demo-token-for-testing-only-')) {
-          req.user = {
-            id: '550e8400-e29b-41d4-a716-446655440000',
-            email: 'demo@test.com',
-            user_metadata: {
-              full_name: 'Demo User',
-              role: 'admin'
-            }
-          };
+        // Verify tokens with Supabase
+        const userResult = await supabaseClient.verifyAccessToken(accessToken);
+        
+        if (userResult.success) {
+          req.user = userResult.data;
           req.accessToken = accessToken;
-          req.supabaseClient = supabaseClient.getClientForUser();
-        } else {
-          // Verify real tokens with Supabase
-          const userResult = await supabaseClient.verifyAccessToken(accessToken);
-          
-          if (userResult.success) {
-            req.user = userResult.data;
-            req.accessToken = accessToken;
-            req.supabaseClient = supabaseClient.getClientForUser(accessToken);
-          }
+          req.supabaseClient = supabaseClient.getClientForUser(accessToken);
         }
       }
     }
@@ -140,21 +111,6 @@ function requireRole(requiredRoles) {
         });
       }
 
-      // Handle demo user - always has admin role
-      if (req.user.id === '550e8400-e29b-41d4-a716-446655440000') {
-        const roles = Array.isArray(requiredRoles) ? requiredRoles : [requiredRoles];
-        const demoUserRole = 'admin';
-        
-        if (!roles.includes(demoUserRole)) {
-          return res.status(403).json({
-            success: false,
-            error: `Access denied. Required role: ${roles.join(' or ')}, user role: ${demoUserRole}`
-          });
-        }
-
-        req.userRole = demoUserRole;
-        return next();
-      }
 
       // Get user's role from employee profile
       const employeeResult = await supabaseClient.getAll(

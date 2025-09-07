@@ -130,9 +130,12 @@ database-backup*.sql
 
 # Test files
 test-auth-flow.js
-manual-auth-test.js
-auth-test*.png
+tests/manual-auth-test.js
+tests/artifacts/
+tests/cache/
 screenshot.js
+playwright-report/
+test-results/
 
 # Claude specific files
 %APPDATA%Claudeclaude_desktop_config.json

@@ -322,7 +322,7 @@ class PermissionService extends BaseService {
    */
   async getRoleTemplate(role, options = {}) {
     try {
-      const { data, error } = await DatabaseService.select('permission_templates', {
+      const { data, error } = await DatabaseService.getAll('permission_templates', {
         select: `
           module_code,
           action,
@@ -365,7 +365,7 @@ class PermissionService extends BaseService {
    */
   async getPermissionModules(options = {}) {
     try {
-      const { data, error } = await DatabaseService.select('permission_modules', {
+      const { data, error } = await DatabaseService.getAll('permission_modules', {
         filters: [{ column: 'is_active', value: true }],
         orderBy: 'display_order.asc',
         ...options
@@ -393,7 +393,7 @@ class PermissionService extends BaseService {
    */
   async getModule(moduleCode, options = {}) {
     try {
-      const { data, error } = await DatabaseService.select('permission_modules', {
+      const { data, error } = await DatabaseService.getAll('permission_modules', {
         filters: [
           { column: 'module_code', value: moduleCode },
           { column: 'is_active', value: true }
@@ -428,7 +428,7 @@ class PermissionService extends BaseService {
    */
   async getUserAuditLog(userId, limit = 50, options = {}) {
     try {
-      const { data, error } = await DatabaseService.select('permission_audit_log', {
+      const { data, error } = await DatabaseService.getAll('permission_audit_log', {
         select: `
           *,
           employees!permission_audit_log_changed_by_fkey (
@@ -477,7 +477,7 @@ class PermissionService extends BaseService {
         queryFilters.push({ column: 'changed_by', value: filters.changedBy });
       }
 
-      const { data, error } = await DatabaseService.select('permission_audit_log', {
+      const { data, error } = await DatabaseService.getAll('permission_audit_log', {
         select: `
           *,
           employees!permission_audit_log_user_id_fkey (
@@ -535,7 +535,7 @@ class PermissionService extends BaseService {
         return null;
       }
 
-      const { data, error } = await DatabaseService.select('employees', {
+      const { data, error } = await DatabaseService.getAll('employees', {
         filters: [{ column: 'user_id', value: session.data.user.id }],
         single: true,
         ...options
@@ -559,7 +559,7 @@ class PermissionService extends BaseService {
    */
   async getUserInheritanceInfo(userId, options = {}) {
     try {
-      const { data, error } = await DatabaseService.select('permission_inheritance', {
+      const { data, error } = await DatabaseService.getAll('permission_inheritance', {
         filters: [{ column: 'user_id', value: userId }],
         ...options
       });

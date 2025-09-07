@@ -5,7 +5,6 @@ const express = require('express');
 const { asyncHandler } = require('../middleware/error-handler');
 const { requireStaff, requireManager } = require('../middleware/auth');
 const supabaseClient = require('../../db/supabase-client');
-const { isDemoToken, getMockParts, getMockPartById } = require('../../utils/mock-data');
 
 const router = express.Router();
 
@@ -19,55 +18,12 @@ router.get('/', asyncHandler(async (req, res) => {
     offset = 0,
     search,
     material,
-    active_only = 'true',
     orderBy = 'description',
     ascending = 'true'
   } = req.query;
 
-  const accessToken = req.headers.authorization?.replace('Bearer ', '') || req.accessToken;
-
-  // Use mock data for demo tokens
-  if (isDemoToken(accessToken)) {
-    const options = {
-      orderBy: {
-        column: orderBy,
-        ascending: ascending === 'true'
-      },
-      limit: parseInt(limit),
-      offset: parseInt(offset)
-    };
-
-    // Add filters
-    const filters = [];
-    if (material) filters.push({ column: 'material', value: material });
-    if (active_only === 'true') filters.push({ column: 'active', value: true });
-
-    // Handle search functionality
-    if (search) {
-      filters.push({ 
-        column: 'description', 
-        value: `%${search}%`, 
-        operator: 'ilike' 
-      });
-    }
-
-    if (filters.length > 0) {
-      options.filters = filters;
-    }
-
-    const result = getMockParts(options);
-
-    return res.json({
-      success: true,
-      data: result.data,
-      count: result.count,
-      pagination: {
-        limit: parseInt(limit),
-        offset: parseInt(offset),
-        total: result.count
-      }
-    });
-  }
+  // REMOVED: Demo token bypass to force real database access
+  // Now all requests will use the real Supabase database with admin client
 
   try {
     const options = {
@@ -84,7 +40,6 @@ router.get('/', asyncHandler(async (req, res) => {
     // Add filters
     const filters = [];
     if (material) filters.push({ column: 'material', value: material });
-    if (active_only === 'true') filters.push({ column: 'active', value: true });
 
     // Handle search functionality
     if (search) {
@@ -100,7 +55,7 @@ router.get('/', asyncHandler(async (req, res) => {
       options.filters = filters;
     }
 
-    const result = await supabaseClient.getAll('parts', options);
+    const result = await supabaseClient.getAll('parts', options, true);
 
     res.json({
       success: true,
@@ -135,11 +90,12 @@ router.get('/:id', asyncHandler(async (req, res) => {
       {
         select: `
           *,
-          inventory_lots:part_id(id, lot_number, current_quantity),
+          inventory_lots:part_id(id, current_quantity),
           part_variants:part_id(id, variant_name, variant_value)
         `,
         accessToken: req.accessToken
-      }
+      },
+      true  // Force admin client
     );
 
     if (!result.success) {
@@ -175,7 +131,6 @@ router.post('/', requireStaff, asyncHandler(async (req, res) => {
     description,
     material,
     unit_of_measure,
-    customs_value,
     hts_code,
     country_of_origin,
     supplier,
@@ -194,19 +149,18 @@ router.post('/', requireStaff, asyncHandler(async (req, res) => {
       description,
       material,
       unit_of_measure: unit_of_measure || 'EA',
-      customs_value: customs_value || 0,
       hts_code,
       country_of_origin,
       supplier,
       notes,
-      active: true,
       created_by: req.user.id
     };
 
     const result = await supabaseClient.create(
       'parts',
       partData,
-      { accessToken: req.accessToken }
+      { accessToken: req.accessToken },
+      true  // Force admin client
     );
 
     res.status(201).json(result);
@@ -241,7 +195,8 @@ router.put('/:id', requireStaff, asyncHandler(async (req, res) => {
       'parts',
       id,
       updateData,
-      { accessToken: req.accessToken }
+      { accessToken: req.accessToken },
+      true  // Force admin client
     );
 
     res.json(result);
@@ -256,7 +211,7 @@ router.put('/:id', requireStaff, asyncHandler(async (req, res) => {
 
 /**
  * DELETE /api/parts/:id
- * Soft delete part (set active = false)
+ * Soft delete part
  */
 router.delete('/:id', requireManager, asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -267,12 +222,12 @@ router.delete('/:id', requireManager, asyncHandler(async (req, res) => {
       'inventory_lots',
       {
         filters: [
-          { column: 'part_id', value: id },
-          { column: 'active', value: true }
+          { column: 'part_id', value: id }
         ],
         limit: 1,
         accessToken: req.accessToken
-      }
+      },
+      true  // Force admin client
     );
 
     if (inventoryCheck.success && inventoryCheck.data.length > 0) {
@@ -285,12 +240,12 @@ router.delete('/:id', requireManager, asyncHandler(async (req, res) => {
     const result = await supabaseClient.update(
       'parts',
       id,
-      { 
-        active: false,
+      {
         updated_at: new Date().toISOString(),
         updated_by: req.user.id
       },
-      { accessToken: req.accessToken }
+      { accessToken: req.accessToken },
+      true  // Force admin client
     );
 
     res.json(result);
@@ -345,26 +300,23 @@ router.get('/reference/materials', asyncHandler(async (req, res) => {
  */
 router.get('/:id/inventory', asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { active_only = 'true' } = req.query;
 
   try {
     const filters = [{ column: 'part_id', value: id }];
-    if (active_only === 'true') {
-      filters.push({ column: 'active', value: true });
-    }
 
     const result = await supabaseClient.getAll(
       'inventory_lots',
       {
         filters,
         select: `
-          id, lot_number, quantity, unit_value, total_value, entry_date,
-          customers:customer_id(name), 
+          id, quantity, unit_value, total_value,
+          customers(name), 
           storage_locations:storage_location_id(location_code)
         `,
-        orderBy: { column: 'entry_date', ascending: false },
+        orderBy: { column: 'created_at', ascending: false },
         accessToken: req.accessToken
-      }
+      },
+      true  // Force admin client
     );
 
     // Calculate totals

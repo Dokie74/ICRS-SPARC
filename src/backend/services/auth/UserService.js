@@ -43,7 +43,7 @@ class UserService extends BaseService {
         query.filters = filters;
       }
 
-      const result = await DatabaseService.select('employees', query);
+      const result = await DatabaseService.getAll('employees', query);
       
       if (result.success) {
         // Add email_confirmed field based on user_id existence (preserves original logic)
@@ -206,7 +206,7 @@ class UserService extends BaseService {
    */
   async getManagers(options = {}) {
     try {
-      const result = await DatabaseService.select('employees', {
+      const result = await DatabaseService.getAll('employees', {
         select: 'id, name, email',
         filters: [
           { column: 'role', value: 'manager' },

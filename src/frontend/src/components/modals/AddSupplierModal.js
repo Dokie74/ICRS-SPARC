@@ -146,12 +146,20 @@ const AddSupplierModal = ({
       newErrors.country = 'Country is required';
     }
     
-    if (formData.ein && !/^\d{2}-\d{7}$/.test(formData.ein)) {
-      newErrors.ein = 'EIN must be in format XX-XXXXXXX';
+    // Require contact_person
+    if (!formData.contact_person.trim()) {
+      newErrors.contact_person = 'Primary contact person is required';
     }
     
-    if (formData.contact_email && !/\S+@\S+\.\S+/.test(formData.contact_email)) {
+    // Require contact_email and validate format
+    if (!formData.contact_email.trim()) {
+      newErrors.contact_email = 'Contact email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.contact_email)) {
       newErrors.contact_email = 'Invalid email format';
+    }
+    
+    if (formData.ein && !/^\d{2}-\d{7}$/.test(formData.ein)) {
+      newErrors.ein = 'EIN must be in format XX-XXXXXXX';
     }
     
     if (formData.broker_contact_email && !/\S+@\S+\.\S+/.test(formData.broker_contact_email)) {
@@ -345,7 +353,7 @@ const AddSupplierModal = ({
             {/* Primary Contact Person */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Primary Contact Person
+                Primary Contact Person *
               </label>
               <input
                 type="text"
@@ -375,7 +383,7 @@ const AddSupplierModal = ({
             {/* Email */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email
+                Email *
               </label>
               <input
                 type="email"

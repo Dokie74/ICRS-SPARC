@@ -54,7 +54,7 @@ class EntrySummaryService extends BaseService {
         offset: options.offset
       };
 
-      const result = await DatabaseService.select('entry_summaries', queryOptions);
+      const result = await DatabaseService.getAll('entry_summaries', queryOptions);
       return result;
     } catch (error) {
       console.error('Error fetching entry summaries:', error);
@@ -68,7 +68,7 @@ class EntrySummaryService extends BaseService {
    */
   async getEntrySummaryById(id, options = {}) {
     try {
-      const result = await DatabaseService.select('entry_summaries', {
+      const result = await DatabaseService.getAll('entry_summaries', {
         filters: [{ column: 'id', value: id }],
         single: true,
         ...options
@@ -86,7 +86,7 @@ class EntrySummaryService extends BaseService {
    */
   async getEntrySummaryByEntryNumber(entryNumber, options = {}) {
     try {
-      const result = await DatabaseService.select('entry_summaries', {
+      const result = await DatabaseService.getAll('entry_summaries', {
         filters: [{ column: 'entry_number', value: entryNumber }],
         single: true,
         ...options
@@ -106,7 +106,7 @@ class EntrySummaryService extends BaseService {
   async createEntrySummaryFromPreshipment(preshipmentId, options = {}) {
     try {
       // Get preshipment data (adapts to SPARC database pattern)
-      const preshipmentResult = await DatabaseService.select('preshipments', {
+      const preshipmentResult = await DatabaseService.getAll('preshipments', {
         filters: [{ column: 'id', value: preshipmentId }],
         single: true,
         ...options
@@ -208,7 +208,7 @@ class EntrySummaryService extends BaseService {
         const item = items[i];
         
         // Get part information (adapts to SPARC pattern)
-        const partResult = await DatabaseService.select('parts', {
+        const partResult = await DatabaseService.getAll('parts', {
           filters: [{ column: 'id', value: item.part_id }],
           single: true,
           ...options
@@ -280,7 +280,7 @@ class EntrySummaryService extends BaseService {
   async calculateAndCreateGrandTotals(entrySummaryId, options = {}) {
     try {
       // Get all line items for this entry
-      const lineItemsResult = await DatabaseService.select('entry_line_items', {
+      const lineItemsResult = await DatabaseService.getAll('entry_line_items', {
         filters: [{ column: 'entry_summary_id', value: entrySummaryId }],
         ...options
       });
@@ -370,7 +370,7 @@ class EntrySummaryService extends BaseService {
       const entry = entryResult.data;
 
       // Get line items
-      const lineItemsResult = await DatabaseService.select('entry_line_items', {
+      const lineItemsResult = await DatabaseService.getAll('entry_line_items', {
         filters: [{ column: 'entry_summary_id', value: entrySummaryId }],
         orderBy: 'line_item_number.asc',
         ...options
@@ -378,7 +378,7 @@ class EntrySummaryService extends BaseService {
 
       // Get FTZ status records for each line item (preserves comprehensive data fetching)
       const ftzStatusPromises = lineItemsResult.data?.map(async (item) => {
-        const ftzResult = await DatabaseService.select('ftz_status_records', {
+        const ftzResult = await DatabaseService.getAll('ftz_status_records', {
           filters: [{ column: 'entry_line_item_id', value: item.id }],
           single: true,
           ...options
@@ -392,14 +392,14 @@ class EntrySummaryService extends BaseService {
       const lineItemsWithFTZ = await Promise.all(ftzStatusPromises);
 
       // Get grand totals
-      const grandTotalsResult = await DatabaseService.select('entry_grand_totals', {
+      const grandTotalsResult = await DatabaseService.getAll('entry_grand_totals', {
         filters: [{ column: 'entry_summary_id', value: entrySummaryId }],
         single: true,
         ...options
       });
 
       // Get PGA data if any
-      const pgaResult = await DatabaseService.select('pga_data', {
+      const pgaResult = await DatabaseService.getAll('pga_data', {
         filters: [{ column: 'entry_summary_id', value: entrySummaryId }],
         ...options
       });
@@ -465,7 +465,7 @@ class EntrySummaryService extends BaseService {
    */
   async getEntrySummariesByStatus(status, options = {}) {
     try {
-      const result = await DatabaseService.select('entry_summaries', {
+      const result = await DatabaseService.getAll('entry_summaries', {
         filters: [{ column: 'filing_status', value: status }],
         orderBy: 'created_at.desc',
         ...options
@@ -535,7 +535,7 @@ class EntrySummaryService extends BaseService {
     try {
       if (!lotId) return null;
 
-      const result = await DatabaseService.select('inventory_lots', {
+      const result = await DatabaseService.getAll('inventory_lots', {
         filters: [{ column: 'id', value: lotId }],
         single: true,
         ...options
@@ -568,7 +568,7 @@ class EntrySummaryService extends BaseService {
         queryFilters.push({ column: 'consignee_id', value: filters.consignee_id });
       }
 
-      const result = await DatabaseService.select('entry_summaries', {
+      const result = await DatabaseService.getAll('entry_summaries', {
         filters: queryFilters,
         orderBy: 'created_at.desc',
         ...options
@@ -598,7 +598,7 @@ class EntrySummaryService extends BaseService {
    */
   async getEntrySummaryStats(dateRange = {}, options = {}) {
     try {
-      const result = await DatabaseService.select('entry_summaries', {
+      const result = await DatabaseService.getAll('entry_summaries', {
         ...options
       });
 
@@ -662,7 +662,7 @@ class EntrySummaryService extends BaseService {
       console.log('Creating entry summary from group:', groupId);
 
       // Get the group and validate it's ready for filing (uses direct DatabaseService pattern)
-      const groupResult = await DatabaseService.select('entry_summary_groups', {
+      const groupResult = await DatabaseService.getAll('entry_summary_groups', {
         filters: [{ column: 'id', value: groupId }],
         single: true,
         ...options
@@ -682,7 +682,7 @@ class EntrySummaryService extends BaseService {
       }
 
       // Get all preshipments in the group with customer data
-      const groupPreshipmentsResult = await DatabaseService.select('entry_group_preshipments', {
+      const groupPreshipmentsResult = await DatabaseService.getAll('entry_group_preshipments', {
         select: `
           *,
           preshipments!inner (
@@ -931,7 +931,7 @@ class EntrySummaryService extends BaseService {
         queryFilters.push({ column: 'filing_status', value: filters.filing_status });
       }
 
-      const result = await DatabaseService.select('entry_summaries', {
+      const result = await DatabaseService.getAll('entry_summaries', {
         select: `
           *,
           entry_summary_groups (

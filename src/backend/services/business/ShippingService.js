@@ -70,13 +70,7 @@ class ShippingService extends BaseService {
       const queryOptions = {
         select: options.select || `
           *,
-          customers:customer_id(id, name, code),
-          preshipment_line_items:shipment_id(
-            id, lot_id, quantity, unit_value,
-            inventory_lots:lot_id(id, part_id, current_quantity, status,
-              parts:part_id(description, material, hts_code)
-            )
-          )
+          customers(id, name, ein)
         `,
         orderBy: options.orderBy?.column ? 
           `${options.orderBy.column}.${options.orderBy.ascending ? 'asc' : 'desc'}` :
@@ -86,7 +80,7 @@ class ShippingService extends BaseService {
         offset: options.offset
       };
 
-      const result = await DatabaseService.select('preshipments', queryOptions);
+      const result = await DatabaseService.getAll('preshipments', queryOptions);
       return result;
     } catch (error) {
       console.error('Error fetching shipments:', error);
@@ -99,16 +93,10 @@ class ShippingService extends BaseService {
    */
   async getShipmentsByStage(stage, options = {}) {
     try {
-      const result = await DatabaseService.select('preshipments', {
+      const result = await DatabaseService.getAll('preshipments', {
         select: `
           *,
-          customers:customer_id(name, code),
-          preshipment_line_items:shipment_id(
-            id, lot_id, quantity,
-            inventory_lots:lot_id(part_id, current_quantity,
-              parts:part_id(description, material)
-            )
-          )
+          customers(name, ein)
         `,
         filters: [{ column: 'stage', value: stage }],
         orderBy: 'requested_ship_date.asc',
@@ -139,7 +127,7 @@ class ShippingService extends BaseService {
       }
 
       // Get current preshipment
-      const currentResult = await DatabaseService.select('preshipments', {
+      const currentResult = await DatabaseService.getAll('preshipments', {
         filters: [{ column: 'shipmentId', value: shipmentId }],
         single: true,
         ...options
@@ -220,7 +208,7 @@ class ShippingService extends BaseService {
       }
 
       // Get current preshipment
-      const preshipmentResult = await DatabaseService.select('preshipments', {
+      const preshipmentResult = await DatabaseService.getAll('preshipments', {
         filters: [{ column: 'shipmentId', value: shipmentId }],
         single: true,
         ...options
@@ -287,18 +275,11 @@ class ShippingService extends BaseService {
   async generateShippingLabel(shipmentId, labelData, options = {}) {
     try {
       // Get preshipment details
-      const preshipmentResult = await DatabaseService.select('preshipments', {
+      const preshipmentResult = await DatabaseService.getAll('preshipments', {
         filters: [{ column: 'shipmentId', value: shipmentId }],
         select: `
           *,
-          customers:customer_id(name, address, city, state, zip, country),
-          preshipment_line_items:shipment_id(
-            lot_id, quantity,
-            inventory_lots:lot_id(
-              part_id, current_quantity,
-              parts:part_id(description, material, hts_code, country_of_origin)
-            )
-          )
+          customers(name, address, city, state, zip, country)
         `,
         single: true,
         ...options
@@ -347,13 +328,13 @@ class ShippingService extends BaseService {
           height: labelData.height || 12,
           package_type: labelData.package_type || 'BOX'
         },
-        items: preshipment.preshipment_line_items?.map(item => ({
-          description: item.inventory_lots?.parts?.description || 'Item',
+        items: preshipment.items?.map(item => ({
+          description: item.description || 'Item',
           quantity: item.quantity,
           value: item.unit_value || 0,
           weight: labelData.item_weight || 1,
-          hts_code: item.inventory_lots?.parts?.hts_code,
-          country_of_origin: item.inventory_lots?.parts?.country_of_origin || 'US'
+          hts_code: item.hts_code,
+          country_of_origin: item.country_of_origin || 'US'
         })) || [],
         label_format: labelData.label_format || 'PDF',
         created_at: new Date().toISOString()
@@ -401,7 +382,7 @@ class ShippingService extends BaseService {
         if (!item.lot_id || !item.quantity) continue;
 
         // Get current lot information
-        const lotResult = await DatabaseService.select('inventory_lots', {
+        const lotResult = await DatabaseService.getAll('inventory_lots', {
           filters: [{ column: 'id', value: item.lot_id }],
           single: true,
           ...options
@@ -498,10 +479,10 @@ class ShippingService extends BaseService {
         queryFilters.push({ column: 'carrier_name', value: filters.carrier });
       }
 
-      const result = await DatabaseService.select('preshipments', {
+      const result = await DatabaseService.getAll('preshipments', {
         select: `
           *,
-          customers:customer_id(name, code)
+          customers(name, ein)
         `,
         filters: queryFilters,
         orderBy: 'created_at.desc',
@@ -574,7 +555,7 @@ class ShippingService extends BaseService {
    */
   async getShippingStatistics(dateRange = {}, options = {}) {
     try {
-      const result = await DatabaseService.select('preshipments', {
+      const result = await DatabaseService.getAll('preshipments', {
         ...options
       });
       

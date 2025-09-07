@@ -27,9 +27,10 @@ const authRoutes = require('./routes/auth');
 const materialsRoutes = require('./routes/materials');
 const locationsRoutes = require('./routes/locations');
 const adminRoutes = require('./routes/admin');
-const demoRoutes = require('./routes/demo');
+// const demoRoutes = require('./routes/demo'); // Removed as per Fix Plan
 const htsRoutes = require('./routes/hts');
 const materialPricingRoutes = require('./routes/material-pricing');
+const tariffRoutes = require('./routes/tariff');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -49,23 +50,26 @@ app.use(helmet({
 
 // CORS configuration - must come BEFORE rate limiting for OPTIONS preflight
 const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl)
-    if (!origin) return callback(null, true);
-    
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'https://localhost:3000',
-      process.env.FRONTEND_URL
-    ].filter(Boolean);
-    
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: process.env.NODE_ENV === 'development' 
+    ? '*'  // Allow all origins in development (like the example app)
+    : function (origin, callback) {
+        // Production: Use specific allowed origins
+        if (!origin) return callback(null, true);
+        
+        const allowedOrigins = [
+          'http://localhost:3000',
+          'http://localhost:3001',
+          'http://localhost:3002',
+          'https://localhost:3000',
+          process.env.FRONTEND_URL
+        ].filter(Boolean);
+        
+        if (allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
@@ -181,7 +185,8 @@ app.get('/api', (req, res) => {
         dashboard: '/api/dashboard/*',
         admin: '/api/admin/*',
         hts: '/api/hts/*',
-        materialPricing: '/api/material-pricing/*'
+        materialPricing: '/api/material-pricing/*',
+        tariff: '/api/tariff/*'
       },
       features: [
         'Row Level Security (RLS) integration',
@@ -195,7 +200,7 @@ app.get('/api', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/demo', demoRoutes);
+// app.use('/api/demo', demoRoutes); // Removed as per Fix Plan
 app.use('/api/inventory', authMiddleware, inventoryRoutes);
 app.use('/api/parts', authMiddleware, partsRoutes);
 app.use('/api/customers', authMiddleware, customersRoutes);
@@ -209,6 +214,7 @@ app.use('/api/materials', authMiddleware, materialsRoutes);
 app.use('/api/locations', authMiddleware, locationsRoutes);
 app.use('/api/hts', authMiddleware, htsRoutes);
 app.use('/api/material-pricing', authMiddleware, materialPricingRoutes);
+app.use('/api/tariff', authMiddleware, tariffRoutes);
 
 // 404 handler for API routes
 app.use('/api/*', (req, res) => {

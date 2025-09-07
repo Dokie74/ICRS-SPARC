@@ -13,6 +13,9 @@ import AddSupplierModal from './AddSupplierModal';
 import AddPreadmissionModal from './AddPreadmissionModal';
 import CreatePreshipmentModal from './CreatePreshipmentModal';
 import EnhancedQuarterlyUpdateModal from './EnhancedQuarterlyUpdateModal';
+import DockAuditModal from './DockAuditModal';
+import DriverSignoffModal from './DriverSignoffModal';
+import PrintLabelsModal from './PrintLabelsModal';
 
 const ModalContainer = () => {
   const { activeModal, modalData, hideModal, showSuccess, showError, showModal } = useApp();
@@ -55,6 +58,18 @@ const ModalContainer = () => {
     // Quarterly Pricing
     'enhanced-quarterly-update-modal': EnhancedQuarterlyUpdateModal,
     'quarterly-pricing-modal': EnhancedQuarterlyUpdateModal,
+    
+    // Dock Operations
+    'dock-audit-modal': DockAuditModal,
+    'DockAuditModal': DockAuditModal,
+    
+    // Driver Operations
+    'driver-signoff-modal': DriverSignoffModal,
+    'DriverSignoffModal': DriverSignoffModal,
+    
+    // Label Operations
+    'print-labels-modal': PrintLabelsModal,
+    'PrintLabelsModal': PrintLabelsModal,
     
     // Add more modal mappings as components are created
   };

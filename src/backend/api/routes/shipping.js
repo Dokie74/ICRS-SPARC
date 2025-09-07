@@ -6,7 +6,6 @@ const express = require('express');
 const { asyncHandler } = require('../middleware/error-handler');
 const { requireStaff, requireManager } = require('../middleware/auth');
 const ShippingService = require('../../services/business/ShippingService');
-const { isDemoToken } = require('../../utils/mock-data');
 
 const router = express.Router();
 
@@ -29,68 +28,13 @@ router.get('/', asyncHandler(async (req, res) => {
 
   const accessToken = req.headers.authorization?.replace('Bearer ', '') || req.accessToken;
 
-  // Handle demo tokens with mock data
-  if (isDemoToken(accessToken)) {
-    const mockShipments = [
-      {
-        id: '1',
-        shipment_id: 'SHP-2024-001',
-        customer_id: 'CUST-001',
-        customer_name: 'Acme Manufacturing',
-        stage: 'Ready to Ship',
-        carrier_name: 'FedEx',
-        tracking_number: 'TRK123456789',
-        requested_ship_date: '2024-01-15T10:00:00Z',
-        items: [{ part_id: 'PART-001', quantity: 50, description: 'Widget A' }],
-        created_at: '2024-01-14T09:00:00Z'
-      },
-      {
-        id: '2',
-        shipment_id: 'SHP-2024-002',
-        customer_id: 'CUST-002',
-        customer_name: 'Tech Solutions Inc',
-        stage: 'Staged',
-        carrier_name: 'UPS',
-        tracking_number: 'TRK987654321',
-        requested_ship_date: '2024-01-16T14:00:00Z',
-        items: [{ part_id: 'PART-002', quantity: 25, description: 'Component B' }],
-        created_at: '2024-01-14T11:00:00Z'
-      }
-    ];
-
-    let filteredShipments = [...mockShipments];
-
-    // Apply filters
-    if (stage) {
-      filteredShipments = filteredShipments.filter(s => s.stage === stage);
-    }
-    if (customer_id && customer_id !== 'undefined') {
-      filteredShipments = filteredShipments.filter(s => s.customer_id === customer_id);
-    }
-    if (carrier) {
-      filteredShipments = filteredShipments.filter(s => 
-        s.carrier_name.toLowerCase().includes(carrier.toLowerCase())
-      );
-    }
-
-    return res.json({
-      success: true,
-      data: filteredShipments.slice(parseInt(offset), parseInt(offset) + parseInt(limit)),
-      count: filteredShipments.length,
-      pagination: {
-        limit: parseInt(limit),
-        offset: parseInt(offset),
-        total: filteredShipments.length
-      }
-    });
-  }
 
   try {
     const options = {
-      orderBy: {
+      orderBy: orderBy ? {
         column: orderBy,
         ascending: ascending === 'true'
-      },
+      } : undefined,
       limit: parseInt(limit),
       offset: parseInt(offset),
       accessToken: accessToken
@@ -126,7 +70,7 @@ router.get('/', asyncHandler(async (req, res) => {
 
     // Transform data to include calculated totals
     const transformedData = result.data.map(shipment => {
-      const lineItems = shipment.preshipment_line_items || [];
+      const lineItems = shipment.items || [];
       const totals = lineItems.reduce((acc, item) => {
         acc.total_quantity += item.quantity || 0;
         acc.line_count += 1;
@@ -136,8 +80,9 @@ router.get('/', asyncHandler(async (req, res) => {
       return {
         ...shipment,
         line_items_summary: totals,
+        preshipment_line_items: lineItems, // For frontend compatibility
         customer_name: shipment.customers?.name,
-        customer_code: shipment.customers?.code
+        customer_code: shipment.customers?.ein
       };
     });
 

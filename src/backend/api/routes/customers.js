@@ -5,7 +5,6 @@ const express = require('express');
 const { asyncHandler } = require('../middleware/error-handler');
 const { requireStaff, requireManager } = require('../middleware/auth');
 const supabaseClient = require('../../db/supabase-client');
-const { isDemoToken, getMockCustomers, getMockCustomerById } = require('../../utils/mock-data');
 
 const router = express.Router();
 
@@ -19,53 +18,12 @@ router.get('/', asyncHandler(async (req, res) => {
     offset = 0,
     search,
     country,
-    active_only = 'true',
     orderBy = 'name',
     ascending = 'true'
   } = req.query;
 
-  // Use mock data for demo tokens
-  if (isDemoToken(req.accessToken)) {
-    const options = {
-      orderBy: {
-        column: orderBy,
-        ascending: ascending === 'true'
-      },
-      limit: parseInt(limit),
-      offset: parseInt(offset)
-    };
-
-    // Add filters
-    const filters = [];
-    if (country) filters.push({ column: 'country', value: country });
-    if (active_only === 'true') filters.push({ column: 'active', value: true });
-
-    // Handle search functionality
-    if (search) {
-      filters.push({ 
-        column: 'name', 
-        value: `%${search}%`, 
-        operator: 'ilike' 
-      });
-    }
-
-    if (filters.length > 0) {
-      options.filters = filters;
-    }
-
-    const result = getMockCustomers(options);
-
-    return res.json({
-      success: true,
-      data: result.data,
-      count: result.count,
-      pagination: {
-        limit: parseInt(limit),
-        offset: parseInt(offset),
-        total: result.count
-      }
-    });
-  }
+  // REMOVED: Demo token bypass to force real database access
+  // Now all requests will use the real Supabase database with admin client
 
   try {
     const options = {
@@ -82,7 +40,6 @@ router.get('/', asyncHandler(async (req, res) => {
     // Add filters
     const filters = [];
     if (country) filters.push({ column: 'country', value: country });
-    if (active_only === 'true') filters.push({ column: 'active', value: true });
 
     // Handle search functionality
     if (search) {
@@ -132,11 +89,12 @@ router.get('/:id', asyncHandler(async (req, res) => {
       {
         select: `
           *,
-          inventory_lots:customer_id(id, lot_number, quantity, total_value),
-          preadmissions:customer_id(id, container_number, status, entry_date)
+          inventory_lots(id, quantity, total_value),
+          preadmissions(id, container_number, status)
         `,
         accessToken: req.accessToken
-      }
+      },
+      false  // Use RLS
     );
 
     if (!result.success) {
@@ -220,7 +178,8 @@ router.post('/', requireStaff, asyncHandler(async (req, res) => {
         filters: [{ column: 'code', value: code }],
         limit: 1,
         accessToken: req.accessToken
-      }
+      },
+      false  // Use RLS
     );
 
     if (existingCustomer.success && existingCustomer.data.length > 0) {
@@ -244,14 +203,14 @@ router.post('/', requireStaff, asyncHandler(async (req, res) => {
       tax_id,
       customs_broker,
       notes,
-      active: true,
       created_by: req.user.id
     };
 
     const result = await supabaseClient.create(
       'customers',
       customerData,
-      { accessToken: req.accessToken }
+      { accessToken: req.accessToken },
+      false  // Use RLS
     );
 
     res.status(201).json(result);
@@ -288,7 +247,8 @@ router.put('/:id', requireStaff, asyncHandler(async (req, res) => {
         ],
         limit: 1,
         accessToken: req.accessToken
-      }
+      },
+      false  // Use RLS
     );
 
     if (existingCustomer.success && existingCustomer.data.length > 0) {
@@ -308,7 +268,8 @@ router.put('/:id', requireStaff, asyncHandler(async (req, res) => {
       'customers',
       id,
       updateData,
-      { accessToken: req.accessToken }
+      { accessToken: req.accessToken },
+      false  // Use RLS
     );
 
     res.json(result);
@@ -323,7 +284,7 @@ router.put('/:id', requireStaff, asyncHandler(async (req, res) => {
 
 /**
  * DELETE /api/customers/:id
- * Soft delete customer (set active = false)
+ * Soft delete customer
  */
 router.delete('/:id', requireManager, asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -334,12 +295,12 @@ router.delete('/:id', requireManager, asyncHandler(async (req, res) => {
       'inventory_lots',
       {
         filters: [
-          { column: 'customer_id', value: id },
-          { column: 'active', value: true }
+          { column: 'customer_id', value: id }
         ],
         limit: 1,
         accessToken: req.accessToken
-      }
+      },
+      false  // Use RLS
     );
 
     if (inventoryCheck.success && inventoryCheck.data.length > 0) {
@@ -352,12 +313,12 @@ router.delete('/:id', requireManager, asyncHandler(async (req, res) => {
     const result = await supabaseClient.update(
       'customers',
       id,
-      { 
-        active: false,
+      {
         updated_at: new Date().toISOString(),
         updated_by: req.user.id
       },
-      { accessToken: req.accessToken }
+      { accessToken: req.accessToken },
+      false  // Use RLS
     );
 
     res.json(result);
@@ -376,28 +337,26 @@ router.delete('/:id', requireManager, asyncHandler(async (req, res) => {
  */
 router.get('/:id/inventory', asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { active_only = 'true', limit = 100, offset = 0 } = req.query;
+  const { limit = 100, offset = 0 } = req.query;
 
   try {
     const filters = [{ column: 'customer_id', value: id }];
-    if (active_only === 'true') {
-      filters.push({ column: 'active', value: true });
-    }
 
     const result = await supabaseClient.getAll(
       'inventory_lots',
       {
         filters,
         select: `
-          id, lot_number, quantity, unit_value, total_value, entry_date,
+          id, quantity, unit_value, total_value,
           parts:part_id(description, material),
           storage_locations:storage_location_id(location_code)
         `,
-        orderBy: { column: 'entry_date', ascending: false },
+        orderBy: { column: 'created_at', ascending: false },
         limit: parseInt(limit),
         offset: parseInt(offset),
         accessToken: req.accessToken
-      }
+      },
+      false  // Use RLS
     );
 
     // Calculate totals
@@ -447,12 +406,13 @@ router.get('/:id/preadmissions', asyncHandler(async (req, res) => {
       'preadmissions',
       {
         filters,
-        select: 'id, container_number, status, entry_date, arrival_date, customs_value',
-        orderBy: { column: 'entry_date', ascending: false },
+        select: 'id, container_number, status, arrival_date',
+        orderBy: { column: 'created_at', ascending: false },
         limit: parseInt(limit),
         offset: parseInt(offset),
         accessToken: req.accessToken
-      }
+      },
+      false  // Use RLS
     );
 
     res.json({

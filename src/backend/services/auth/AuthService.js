@@ -74,10 +74,6 @@ class AuthService extends EnhancedBaseService {
    */
   async logout(accessToken = null) {
     try {
-      // Handle demo tokens
-      if (accessToken && accessToken.startsWith('demo-token-for-testing-only-')) {
-        return { success: true, message: 'Demo logout successful' };
-      }
 
       const { error } = await supabaseClient.anonClient.auth.signOut();
       
@@ -113,20 +109,6 @@ class AuthService extends EnhancedBaseService {
    */
   async getCurrentUser(accessToken = null) {
     try {
-      // Handle demo tokens
-      if (accessToken && accessToken.startsWith('demo-token-for-testing-only-')) {
-        return {
-          success: true,
-          data: {
-            id: '550e8400-e29b-41d4-a716-446655440000',
-            email: 'demo@test.com',
-            user_metadata: {
-              full_name: 'Demo User',
-              role: 'admin'
-            }
-          }
-        };
-      }
 
       const client = accessToken ? supabaseClient.getClientForUser(accessToken) : supabaseClient.anonClient;
       const { data: { user }, error } = await client.auth.getUser(accessToken);
@@ -146,20 +128,6 @@ class AuthService extends EnhancedBaseService {
    */
   async getUserProfile(userId, options = {}) {
     try {
-      // Handle demo users
-      if (userId === '550e8400-e29b-41d4-a716-446655440000') {
-        return {
-          success: true,
-          data: {
-            id: 'demo-employee-123',
-            user_id: '550e8400-e29b-41d4-a716-446655440000',
-            first_name: 'Demo',
-            last_name: 'User',
-            role: 'admin',
-            active: true
-          }
-        };
-      }
 
       // Query employees table for user profile (preserves original business logic)
       const profileResult = await supabaseClient.getAll('employees', {
@@ -558,10 +526,6 @@ class AuthService extends EnhancedBaseService {
    */
   async updatePassword(newPassword, accessToken) {
     try {
-      // Handle demo tokens
-      if (accessToken && accessToken.startsWith('demo-token-for-testing-only-')) {
-        return { success: true, message: 'Demo password update successful' };
-      }
 
       const client = supabaseClient.getClientForUser(accessToken);
       const { error } = await client.auth.updateUser({
@@ -582,10 +546,6 @@ class AuthService extends EnhancedBaseService {
    */
   async getUserRole(accessToken) {
     try {
-      // Handle demo tokens
-      if (accessToken && accessToken.startsWith('demo-token-for-testing-only-')) {
-        return { success: true, data: 'admin' };
-      }
 
       const userResult = await this.getCurrentUser(accessToken);
       if (!userResult.success) {
@@ -612,10 +572,6 @@ class AuthService extends EnhancedBaseService {
    */
   async isAdmin(accessToken) {
     try {
-      // Handle demo tokens
-      if (accessToken && accessToken.startsWith('demo-token-for-testing-only-')) {
-        return { success: true, data: true };
-      }
 
       const roleResult = await this.getUserRole(accessToken);
       if (!roleResult.success) {
@@ -637,10 +593,6 @@ class AuthService extends EnhancedBaseService {
    */
   async isManager(accessToken) {
     try {
-      // Handle demo tokens
-      if (accessToken && accessToken.startsWith('demo-token-for-testing-only-')) {
-        return { success: true, data: true };
-      }
 
       const roleResult = await this.getUserRole(accessToken);
       if (!roleResult.success) {
@@ -662,10 +614,6 @@ class AuthService extends EnhancedBaseService {
    */
   async checkPermission(permission, accessToken) {
     try {
-      // Handle demo tokens
-      if (accessToken && accessToken.startsWith('demo-token-for-testing-only-')) {
-        return { success: true, data: true };
-      }
 
       const userResult = await this.getCurrentUser(accessToken);
       if (!userResult.success) {
@@ -700,20 +648,6 @@ class AuthService extends EnhancedBaseService {
    */
   async validateSession(accessToken) {
     try {
-      // Handle demo tokens
-      if (accessToken && accessToken.startsWith('demo-token-for-testing-only-')) {
-        return {
-          success: true,
-          data: {
-            id: '550e8400-e29b-41d4-a716-446655440000',
-            email: 'demo@test.com',
-            user_metadata: {
-              full_name: 'Demo User',
-              role: 'admin'
-            }
-          }
-        };
-      }
 
       const { data: { user }, error } = await supabaseClient.anonClient.auth.getUser(accessToken);
       

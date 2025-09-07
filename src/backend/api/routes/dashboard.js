@@ -5,7 +5,6 @@
 const express = require('express');
 const { asyncHandler } = require('../middleware/error-handler');
 const supabaseClient = require('../../db/supabase-client');
-const { isDemoToken } = require('../../utils/mock-data');
 
 const router = express.Router();
 
@@ -71,22 +70,6 @@ router.get('/metrics', asyncHandler(async (req, res) => {
 router.get('/stats', asyncHandler(async (req, res) => {
   const accessToken = req.headers.authorization?.replace('Bearer ', '') || req.accessToken;
 
-  // Use mock data for demo tokens
-  if (isDemoToken(accessToken)) {
-    const mockStats = {
-      totalInventoryValue: 2450000,
-      activeLots: 156,
-      pendingPreadmissions: 12,
-      monthlyTransactions: 324,
-      lowStockAlerts: 8,
-      completedToday: 15
-    };
-
-    return res.json({
-      success: true,
-      data: mockStats
-    });
-  }
 
   try {
     const [inventoryMetrics, preadmissionMetrics, transactionCount] = await Promise.all([
@@ -123,54 +106,14 @@ router.get('/recent-activity', asyncHandler(async (req, res) => {
   const { limit = 10 } = req.query;
   const accessToken = req.headers.authorization?.replace('Bearer ', '') || req.accessToken;
 
-  // Use mock data for demo tokens
-  if (isDemoToken(accessToken)) {
-    const mockActivity = [
-      {
-        id: 1,
-        description: 'Container MSKU7823456 arrived at port',
-        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        type: 'arrival'
-      },
-      {
-        id: 2,
-        description: 'Inventory lot AL-001-2024 received (500 units)',
-        timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-        type: 'inventory'
-      },
-      {
-        id: 3,
-        description: 'Pre-admission PA-2024-0156 completed',
-        timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-        type: 'preadmission'
-      },
-      {
-        id: 4,
-        description: 'Customer ABC Manufacturing updated contact info',
-        timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-        type: 'customer'
-      },
-      {
-        id: 5,
-        description: 'Shipment SH-2024-0089 processed for export',
-        timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-        type: 'shipment'
-      }
-    ].slice(0, parseInt(limit));
-
-    return res.json({
-      success: true,
-      data: mockActivity
-    });
-  }
 
   try {
     const activity = await getRecentActivity(req.accessToken);
     const formattedActivity = activity.map((item, index) => ({
       id: index + 1,
       description: formatActivityDescription(item),
-      timestamp: item.transaction_date || item.created_at,
-      type: item.transaction_type || 'transaction'
+      timestamp: item.created_at,
+      type: item.type || 'transaction'
     })).slice(0, parseInt(limit));
 
     res.json({
@@ -193,43 +136,19 @@ router.get('/recent-activity', asyncHandler(async (req, res) => {
 router.get('/inventory-summary', asyncHandler(async (req, res) => {
   const accessToken = req.headers.authorization?.replace('Bearer ', '') || req.accessToken;
 
-  // Use mock data for demo tokens
-  if (isDemoToken(accessToken)) {
-    const mockSummary = {
-      totalParts: 127,
-      totalCustomers: 23,
-      totalLocations: 18,
-      lowStockAlerts: 5,
-      topParts: [
-        { description: 'Aluminum Brackets', quantity: 1250, value: 18750 },
-        { description: 'Steel Bolts M10', quantity: 5000, value: 15000 },
-        { description: 'Plastic Housings', quantity: 800, value: 12000 }
-      ],
-      valueByLocation: [
-        { location: 'Zone A-1', value: 450000 },
-        { location: 'Zone B-2', value: 320000 },
-        { location: 'Zone C-1', value: 280000 }
-      ]
-    };
-
-    return res.json({
-      success: true,
-      data: mockSummary
-    });
-  }
 
   try {
     const result = await supabaseClient.getAll(
       'inventory_lots',
       {
         select: `
-          id, lot_number, quantity, unit_value, total_value, entry_date, active,
+          id, quantity, unit_value, total_value,
           parts:part_id(description, material),
-          customers:customer_id(name),
+          customers(name),
           storage_locations:storage_location_id(location_code),
           transactions(quantity)
         `,
-        filters: [{ column: 'active', value: true }],
+        filters: [],
         accessToken: req.accessToken
       }
     );
@@ -331,7 +250,7 @@ router.get('/alerts', asyncHandler(async (req, res) => {
       'preadmissions',
       {
         filters: [{ column: 'status', value: 'pending' }],
-        select: 'id, container_number, customer_id, entry_date',
+        select: 'id, container_number, customer_id, created_at',
         limit: 10,
         accessToken: req.accessToken
       }
@@ -339,7 +258,7 @@ router.get('/alerts', asyncHandler(async (req, res) => {
 
     if (pendingPreadmissions.success) {
       pendingPreadmissions.data.forEach(pa => {
-        const daysPending = Math.floor((new Date() - new Date(pa.entry_date)) / (1000 * 60 * 60 * 24));
+        const daysPending = Math.floor((new Date() - new Date(pa.created_at)) / (1000 * 60 * 60 * 24));
         if (daysPending > 7) {
           alerts.push({
             type: 'info',
@@ -362,9 +281,9 @@ router.get('/alerts', asyncHandler(async (req, res) => {
       {
         filters: [
           { column: 'expiration_date', value: expiringDate.toISOString(), operator: 'lte' },
-          { column: 'active', value: true }
+          
         ],
-        select: 'id, lot_number, expiration_date, parts:part_id(description)',
+        select: 'id, expiration_date, parts:part_id(description)',
         accessToken: req.accessToken
       }
     );
@@ -376,7 +295,7 @@ router.get('/alerts', asyncHandler(async (req, res) => {
           type: 'warning',
           category: 'expiration',
           title: 'Lot Expiring Soon',
-          message: `Lot ${lot.lot_number} expires in ${daysUntilExpiration} days`,
+          message: `Lot ID ${lot.id} expires in ${daysUntilExpiration} days`,
           data: lot,
           created_at: new Date().toISOString()
         });
@@ -409,8 +328,8 @@ async function getInventoryMetrics(accessToken) {
   const result = await supabaseClient.getAll(
     'inventory_lots',
     {
-      select: 'id, quantity, total_value, active, transactions(quantity)',
-      filters: [{ column: 'active', value: true }],
+      select: 'id, quantity, total_value, transactions(quantity)',
+      filters: [],
       accessToken
     }
   );
@@ -430,15 +349,15 @@ async function getCustomerMetrics(accessToken) {
   const result = await supabaseClient.getAll(
     'customers',
     {
-      select: 'id, active',
-      filters: [{ column: 'active', value: true }],
+      select: 'id',
+      filters: [],
       accessToken
     }
   );
 
   return {
     total_customers: result.success ? result.data.length : 0,
-    active_customers: result.success ? result.data.filter(c => c.active).length : 0
+    active_customers: result.success ? result.data.length : 0
   };
 }
 
@@ -446,9 +365,9 @@ async function getPreadmissionMetrics(accessToken, startDate) {
   const result = await supabaseClient.getAll(
     'preadmissions',
     {
-      select: 'id, status, entry_date, customs_value',
+      select: 'id, status',
       filters: [
-        { column: 'entry_date', value: startDate, operator: 'gte' }
+        { column: 'created_at', value: startDate, operator: 'gte' }
       ],
       accessToken
     }
@@ -458,22 +377,21 @@ async function getPreadmissionMetrics(accessToken, startDate) {
 
   return result.data.reduce((acc, pa) => {
     acc.total_preadmissions += 1;
-    acc.total_value += pa.customs_value || 0;
     acc.status_counts[pa.status] = (acc.status_counts[pa.status] || 0) + 1;
     return acc;
-  }, { total_preadmissions: 0, total_value: 0, status_counts: {} });
+  }, { total_preadmissions: 0, status_counts: {} });
 }
 
 async function getRecentActivity(accessToken) {
   // Get recent inventory transactions
   const transactions = await supabaseClient.getAll(
-    'inventory_transactions',
+    'transactions',
     {
       select: `
-        id, transaction_type, quantity, transaction_date,
-        inventory_lots:lot_id(lot_number, parts:part_id(description))
+        id, type, quantity, created_at,
+        inventory_lots:lot_id(id, parts:part_id(description))
       `,
-      orderBy: { column: 'transaction_date', ascending: false },
+      orderBy: { column: 'created_at', ascending: false },
       limit: 5,
       accessToken
     }
@@ -493,7 +411,7 @@ async function getTopParts(accessToken) {
         parts:part_id(id, description, material),
         transactions(quantity)
       `,
-      filters: [{ column: 'active', value: true }],
+      filters: [],
       accessToken
     }
   );
@@ -533,10 +451,10 @@ async function getTopCustomers(accessToken) {
     {
       select: `
         quantity, total_value,
-        customers:customer_id(id, name),
+        customers(id, name),
         transactions(quantity)
       `,
-      filters: [{ column: 'active', value: true }],
+      filters: [],
       accessToken
     }
   );
@@ -592,11 +510,11 @@ async function getMonthlyTransactionCount(accessToken) {
   startOfMonth.setHours(0, 0, 0, 0);
 
   const result = await supabaseClient.getAll(
-    'inventory_transactions',
+    'transactions',
     {
       select: 'id',
       filters: [
-        { column: 'transaction_date', value: startOfMonth.toISOString(), operator: 'gte' }
+        { column: 'created_at', value: startOfMonth.toISOString(), operator: 'gte' }
       ],
       accessToken
     }
@@ -606,11 +524,11 @@ async function getMonthlyTransactionCount(accessToken) {
 }
 
 function formatActivityDescription(item) {
-  if (item.transaction_type) {
+  if (item.type) {
     const partDescription = item.inventory_lots?.parts?.description || 'Unknown Part';
-    const lotNumber = item.inventory_lots?.lot_number || 'Unknown Lot';
+    const lotNumber = item.inventory_lots?.id ? `ID: ${item.inventory_lots.id}` : 'Unknown Lot';
     
-    switch (item.transaction_type) {
+    switch (item.type) {
       case 'receipt':
         return `Received ${Math.abs(item.quantity)} units of ${partDescription} (Lot: ${lotNumber})`;
       case 'shipment':
@@ -618,7 +536,7 @@ function formatActivityDescription(item) {
       case 'adjustment':
         return `Inventory adjustment: ${item.quantity > 0 ? '+' : ''}${item.quantity} units of ${partDescription}`;
       default:
-        return `${item.transaction_type}: ${Math.abs(item.quantity)} units of ${partDescription}`;
+        return `${item.type}: ${Math.abs(item.quantity)} units of ${partDescription}`;
     }
   }
   

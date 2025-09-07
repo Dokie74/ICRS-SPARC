@@ -34,7 +34,7 @@ const PreAdmissions = () => {
     }
   );
 
-  const preadmissions = preadmissionsData?.preadmissions || [];
+  const preadmissions = preadmissionsData?.data || [];
 
   // Filtered and sorted data
   const filteredPreadmissions = useMemo(() => {

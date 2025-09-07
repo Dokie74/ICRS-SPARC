@@ -1,7 +1,8 @@
 // WebSocket service for real-time updates in ICRS SPARC
-// Provides connection management, event subscription, and automatic reconnection
+// Currently disabled - WebSocket server not implemented
+// TODO: Implement WebSocket server and integrate with AppContext
 
-import { useAppStore } from '../stores/useAppStore';
+// import { useAppStore } from '../stores/useAppStore'; // DISABLED - store doesn't exist
 
 class RealtimeService {
   constructor() {
@@ -48,14 +49,15 @@ class RealtimeService {
     this.isConnecting = true;
     
     try {
-      // Update store with connecting status
-      const store = useAppStore.getState();
-      store.realtime.setConnectionStatus('connecting');
+      // TODO: Update status when store is implemented
+      // const store = useAppStore.getState();
+      // store.realtime.setConnectionStatus('connecting');
+      console.log('RealtimeService: Connecting to WebSocket (disabled)');
       
       // Construct WebSocket URL
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const host = window.location.hostname;
-      const port = process.env.NODE_ENV === 'development' ? ':5001' : '';
+      const port = process.env.NODE_ENV === 'development' ? ':5000' : '';
       const wsUrl = `${protocol}//${host}${port}/realtime`;
       
       // Create WebSocket connection
@@ -88,9 +90,11 @@ class RealtimeService {
     this.isConnecting = false;
     this.reconnectAttempts = 0;
     
-    const store = useAppStore.getState();
-    store.realtime.setConnectionStatus('connected');
-    store.realtime.resetReconnectAttempts();
+    // TODO: Update status when store is implemented
+    // const store = useAppStore.getState();
+    // store.realtime.setConnectionStatus('connected');
+    // store.realtime.resetReconnectAttempts();
+    console.log('RealtimeService: Connected to WebSocket (disabled)');
     
     // Send authentication if token is available
     if (this.token) {
@@ -144,8 +148,10 @@ class RealtimeService {
     this.isConnecting = false;
     this.stopHeartbeat();
     
-    const store = useAppStore.getState();
-    store.realtime.setConnectionStatus('disconnected');
+    // TODO: Update status when store is implemented
+    // const store = useAppStore.getState();
+    // store.realtime.setConnectionStatus('disconnected');
+    console.log('RealtimeService: Disconnected from WebSocket (disabled)');
     
     // Don't reconnect if closed intentionally or if destroyed
     if (!this.isDestroyed && event.code !== 1000) {
@@ -167,16 +173,20 @@ class RealtimeService {
   attemptReconnect() {
     if (this.isDestroyed || this.reconnectAttempts >= this.maxReconnectAttempts) {
       console.error('Max reconnection attempts reached');
-      const store = useAppStore.getState();
-      store.realtime.setConnectionStatus('failed');
+      // TODO: Update status when store is implemented
+      // const store = useAppStore.getState();
+      // store.realtime.setConnectionStatus('failed');
+      console.log('RealtimeService: Max reconnection attempts reached (disabled)');
       return;
     }
     
     this.reconnectAttempts++;
     
-    const store = useAppStore.getState();
-    store.realtime.setConnectionStatus('reconnecting');
-    store.realtime.incrementReconnectAttempts();
+    // TODO: Update status when store is implemented
+    // const store = useAppStore.getState();
+    // store.realtime.setConnectionStatus('reconnecting');
+    // store.realtime.incrementReconnectAttempts();
+    console.log('RealtimeService: Attempting to reconnect (disabled)');
     
     // Calculate delay with exponential backoff and jitter
     const baseDelay = Math.min(
@@ -232,8 +242,10 @@ class RealtimeService {
       this.heartbeatTimeout = null;
     }
     
-    const store = useAppStore.getState();
-    store.realtime.setLastHeartbeat(Date.now());
+    // TODO: Update status when store is implemented
+    // const store = useAppStore.getState();
+    // store.realtime.setLastHeartbeat(Date.now());
+    console.log('RealtimeService: Heartbeat received (disabled)');
   }
   
   // Send message to server
@@ -331,13 +343,14 @@ class RealtimeService {
       });
     }
     
-    // Also update the global store
-    const store = useAppStore.getState();
-    store.realtime.addPendingUpdate({
-      event: eventName,
-      payload,
-      timestamp: Date.now()
-    });
+    // TODO: Update store when implemented
+    // const store = useAppStore.getState();
+    // store.realtime.addPendingUpdate({
+    //   event: eventName,
+    //   payload,
+    //   timestamp: Date.now()
+    // });
+    console.log('RealtimeService: Data update received (disabled)', { event: eventName, payload });
   }
   
   // Disconnect and cleanup
@@ -352,8 +365,10 @@ class RealtimeService {
     
     this.subscriptions.clear();
     
-    const store = useAppStore.getState();
-    store.realtime.setConnectionStatus('disconnected');
+    // TODO: Update status when store is implemented
+    // const store = useAppStore.getState();
+    // store.realtime.setConnectionStatus('disconnected');
+    console.log('RealtimeService: Service destroyed (disabled)');
   }
   
   // Get connection status

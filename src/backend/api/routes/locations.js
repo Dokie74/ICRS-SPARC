@@ -5,7 +5,6 @@
 const express = require('express');
 const { asyncHandler } = require('../middleware/error-handler');
 const supabaseClient = require('../../db/supabase-client');
-const { isDemoToken, getMockLocations, getMockLocationById } = require('../../utils/mock-data');
 
 const router = express.Router();
 
@@ -17,45 +16,6 @@ router.get('/', asyncHandler(async (req, res) => {
   const { limit = 1000, offset = 0, active = true, search } = req.query;
   const accessToken = req.headers.authorization?.replace('Bearer ', '');
 
-  // Use mock data for demo tokens
-  if (isDemoToken(accessToken)) {
-    const options = {
-      limit: parseInt(limit),
-      offset: parseInt(offset),
-      filters: []
-    };
-
-    // Filter by active status
-    if (active !== undefined) {
-      options.filters.push({
-        column: 'active',
-        operator: 'eq',
-        value: active === 'true'
-      });
-    }
-
-    // Search filter
-    if (search) {
-      options.filters.push({
-        column: 'name',
-        operator: 'ilike',
-        value: `%${search}%`
-      });
-    }
-
-    const result = getMockLocations(options);
-
-    return res.json({
-      success: true,
-      data: result.data,
-      count: result.count,
-      pagination: {
-        limit: parseInt(limit),
-        offset: parseInt(offset),
-        total: result.count
-      }
-    });
-  }
 
   const options = {
     limit: parseInt(limit),
@@ -64,13 +24,9 @@ router.get('/', asyncHandler(async (req, res) => {
     filters: []
   };
 
-  // Filter by active status
+  // Filter by active status  
   if (active !== undefined) {
-    options.filters.push({
-      column: 'active',
-      operator: 'eq',
-      value: active === 'true'
-    });
+    options.filters.push({ column: 'is_active', value: active === 'true' || active === true });
   }
 
   // Search filter
@@ -82,7 +38,7 @@ router.get('/', asyncHandler(async (req, res) => {
     });
   }
 
-  const result = await supabaseClient.getAll('locations', options);
+  const result = await supabaseClient.getAll('storage_locations', options);
 
   if (!result.success) {
     return res.status(500).json(result);
@@ -110,7 +66,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 
   const options = { accessToken };
 
-  const result = await supabaseClient.getById('locations', id, options);
+  const result = await supabaseClient.getById('storage_locations', id, options);
 
   if (!result.success) {
     return res.status(404).json(result);
@@ -135,7 +91,7 @@ router.post('/', asyncHandler(async (req, res) => {
     updated_at: new Date().toISOString()
   };
 
-  const result = await supabaseClient.create('locations', locationData, { accessToken });
+  const result = await supabaseClient.create('storage_locations', locationData, { accessToken });
 
   if (!result.success) {
     return res.status(400).json(result);
@@ -160,7 +116,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
     updated_at: new Date().toISOString()
   };
 
-  const result = await supabaseClient.update('locations', id, updateData, { accessToken });
+  const result = await supabaseClient.update('storage_locations', id, updateData, { accessToken });
 
   if (!result.success) {
     return res.status(400).json(result);
@@ -181,7 +137,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
   const accessToken = req.headers.authorization?.replace('Bearer ', '');
 
   // Soft delete by setting active = false
-  const result = await supabaseClient.update('locations', id, { 
+  const result = await supabaseClient.update('storage_locations', id, { 
     active: false,
     updated_at: new Date().toISOString()
   }, { accessToken });

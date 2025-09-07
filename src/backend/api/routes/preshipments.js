@@ -6,7 +6,6 @@ const express = require('express');
 const { asyncHandler } = require('../middleware/error-handler');
 const { requireStaff, requireManager } = require('../middleware/auth');
 const supabaseClient = require('../../db/supabase-client');
-const { isDemoToken } = require('../../utils/mock-data');
 const validation = require('../../utils/validation');
 
 const router = express.Router();
@@ -159,68 +158,12 @@ router.get('/', asyncHandler(async (req, res) => {
 
   const accessToken = req.headers.authorization?.replace('Bearer ', '') || req.accessToken;
 
-  // Use mock data for demo tokens
-  if (isDemoToken(accessToken)) {
-    let filteredPreshipments = [...mockPreshipments];
-
-    // Apply filters
-    if (status) filteredPreshipments = filteredPreshipments.filter(ps => ps.stage === status);
-    if (type) filteredPreshipments = filteredPreshipments.filter(ps => ps.type === type);
-    if (customer_id && customer_id !== 'undefined') {
-      filteredPreshipments = filteredPreshipments.filter(ps => ps.customerId === customer_id);
-    }
-    if (stage) filteredPreshipments = filteredPreshipments.filter(ps => ps.stage === stage);
-    if (entry_summary_status) {
-      filteredPreshipments = filteredPreshipments.filter(ps => ps.entry_summary_status === entry_summary_status);
-    }
-    if (shipment_id) {
-      filteredPreshipments = filteredPreshipments.filter(ps => 
-        ps.shipmentId.toLowerCase().includes(shipment_id.toLowerCase())
-      );
-    }
-    if (entry_number) {
-      filteredPreshipments = filteredPreshipments.filter(ps => 
-        ps.entryNumber && ps.entryNumber.toLowerCase().includes(entry_number.toLowerCase())
-      );
-    }
-    if (start_date) {
-      filteredPreshipments = filteredPreshipments.filter(ps => ps.created_at >= start_date);
-    }
-    if (end_date) {
-      filteredPreshipments = filteredPreshipments.filter(ps => ps.created_at <= end_date);
-    }
-    if (priority) filteredPreshipments = filteredPreshipments.filter(ps => ps.priority === priority);
-
-    // Apply sorting
-    filteredPreshipments.sort((a, b) => {
-      const aVal = a[orderBy] || a.created_at;
-      const bVal = b[orderBy] || b.created_at;
-      const comparison = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
-      return ascending === 'true' ? comparison : -comparison;
-    });
-
-    // Apply pagination
-    const start = parseInt(offset) || 0;
-    const count = parseInt(limit) || 100;
-    const paginatedPreshipments = filteredPreshipments.slice(start, start + count);
-
-    return res.json({
-      success: true,
-      data: paginatedPreshipments,
-      count: filteredPreshipments.length,
-      pagination: {
-        limit: parseInt(limit),
-        offset: parseInt(offset),
-        total: filteredPreshipments.length
-      }
-    });
-  }
 
   try {
     const options = {
       select: `
         *,
-        customers:customerId(id, name, code)
+        customers:customerId(id, name, ein)
       `,
       orderBy: {
         column: orderBy,
@@ -279,7 +222,7 @@ router.get('/', asyncHandler(async (req, res) => {
         ...ps,
         items_summary: totals,
         customer_name: ps.customers?.name,
-        customer_code: ps.customers?.code
+        customer_code: ps.customers?.ein
       };
     });
 
@@ -311,20 +254,6 @@ router.get('/:id', asyncHandler(async (req, res) => {
 
   const accessToken = req.headers.authorization?.replace('Bearer ', '') || req.accessToken;
 
-  // Use mock data for demo tokens
-  if (isDemoToken(accessToken)) {
-    const preshipment = mockPreshipments.find(ps => ps.id === id || ps.shipmentId === id);
-    if (!preshipment) {
-      return res.status(404).json({
-        success: false,
-        error: 'Preshipment not found'
-      });
-    }
-    return res.json({
-      success: true,
-      data: preshipment
-    });
-  }
 
   try {
     const result = await supabaseClient.getById(
@@ -333,7 +262,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
       {
         select: `
           *,
-          customers:customerId(id, name, code, contact_person, contact_email)
+          customers:customerId(id, name, ein, contact_email)
         `,
         accessToken: accessToken
       }
@@ -744,47 +673,6 @@ router.get('/stats/dashboard', asyncHandler(async (req, res) => {
   const { start_date, end_date } = req.query;
   const accessToken = req.headers.authorization?.replace('Bearer ', '') || req.accessToken;
 
-  // Use mock data for demo tokens
-  if (isDemoToken(accessToken)) {
-    const stats = {
-      total: mockPreshipments.length,
-      by_stage: {
-        'Planning': 1,
-        'Picking': 0,
-        'Packing': 0,
-        'Loading': 0,
-        'Ready to Ship': 0,
-        'Shipped': 1
-      },
-      by_type: {
-        '7501 Consumption Entry': 1,
-        '7512 T&E Export': 1
-      },
-      by_entry_status: {
-        'NOT_PREPARED': 1,
-        'DRAFT': 0,
-        'READY_TO_FILE': 0,
-        'FILED': 0,
-        'ACCEPTED': 1,
-        'REJECTED': 0
-      },
-      by_priority: {
-        'Low': 0,
-        'Normal': 1,
-        'High': 1,
-        'Urgent': 0
-      },
-      total_estimated_value: 4800.00,
-      total_estimated_duty: 255.00,
-      shipped_count: 1,
-      in_progress_count: 1
-    };
-
-    return res.json({
-      success: true,
-      data: stats
-    });
-  }
 
   try {
     const options = {

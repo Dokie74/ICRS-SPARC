@@ -84,13 +84,9 @@ class ReceivingService extends BaseService {
       const queryOptions = {
         select: options.select || `
           *,
-          customers:customer_id(id, name, code, contact_person),
-          preadmission_line_items:admission_id(
-            id, part_id, expected_quantity, actual_quantity,
-            parts:part_id(description, material, hts_code, country_of_origin)
-          )
+          customers(id, name, ein)
         `,
-        orderBy: options.orderBy?.column ? 
+        orderBy: (options.orderBy?.column && options.orderBy.column !== 'undefined' && options.orderBy.column !== undefined) ? 
           `${options.orderBy.column}.${options.orderBy.ascending ? 'asc' : 'desc'}` :
           'arrival_date.desc',
         filters: options.filters || [],
@@ -98,7 +94,7 @@ class ReceivingService extends BaseService {
         offset: options.offset
       };
 
-      const result = await DatabaseService.select('preadmissions', queryOptions);
+      const result = await DatabaseService.getAll('preadmissions', queryOptions);
       return result;
     } catch (error) {
       console.error('Error fetching receivables:', error);
@@ -111,14 +107,10 @@ class ReceivingService extends BaseService {
    */
   async getReceivablesByStatus(status, options = {}) {
     try {
-      const result = await DatabaseService.select('preadmissions', {
+      const result = await DatabaseService.getAll('preadmissions', {
         select: `
           *,
-          customers:customer_id(name, code, contact_person),
-          preadmission_line_items:admission_id(
-            id, part_id, expected_quantity, actual_quantity,
-            parts:part_id(description, material, hts_code)
-          )
+          customers(id, name, ein)
         `,
         filters: [{ column: 'status', value: status }],
         orderBy: 'arrival_date.asc',
@@ -149,14 +141,10 @@ class ReceivingService extends BaseService {
       }
 
       // Get current preadmission
-      const preadmissionResult = await DatabaseService.select('preadmissions', {
+      const preadmissionResult = await DatabaseService.getAll('preadmissions', {
         filters: [{ column: 'admission_id', value: admissionId }],
         select: `
-          *,
-          preadmission_line_items:admission_id(
-            id, part_id, expected_quantity,
-            parts:part_id(description, material, hts_code, country_of_origin)
-          )
+          *
         `,
         single: true,
         ...options
@@ -391,7 +379,7 @@ class ReceivingService extends BaseService {
       }
 
       // Get preadmission for compliance check
-      const preadmissionResult = await DatabaseService.select('preadmissions', {
+      const preadmissionResult = await DatabaseService.getAll('preadmissions', {
         filters: [{ column: 'admission_id', value: admissionId }],
         single: true,
         ...options
@@ -503,10 +491,10 @@ class ReceivingService extends BaseService {
         queryFilters.push({ column: 'container_number', value: `%${filters.container_number}%`, operator: 'ilike' });
       }
 
-      const result = await DatabaseService.select('preadmissions', {
+      const result = await DatabaseService.getAll('preadmissions', {
         select: `
           *,
-          customers:customer_id(name, code, contact_person)
+          customers(name, ein, contact_person)
         `,
         filters: queryFilters,
         orderBy: 'arrival_date.desc',
@@ -547,7 +535,7 @@ class ReceivingService extends BaseService {
    */
   async getReceivingStatistics(dateRange = {}, options = {}) {
     try {
-      const result = await DatabaseService.select('preadmissions', {
+      const result = await DatabaseService.getAll('preadmissions', {
         ...options
       });
       
@@ -637,7 +625,7 @@ class ReceivingService extends BaseService {
    */
   async getAuditPhotos(admissionId, options = {}) {
     try {
-      const result = await DatabaseService.select('audit_photos', {
+      const result = await DatabaseService.getAll('audit_photos', {
         filters: [{ column: 'admission_id', value: admissionId }],
         orderBy: 'upload_timestamp.desc',
         ...options

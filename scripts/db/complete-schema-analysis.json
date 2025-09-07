@@ -1,0 +1,419 @@
+{
+  "timestamp": "2025-09-04T17:59:07.418Z",
+  "expectedTables": {
+    "parts": {
+      "files": [
+        "admin.js",
+        "materials.js",
+        "parts.js"
+      ],
+      "methods": [
+        "getAll",
+        "getById",
+        "create",
+        "update"
+      ],
+      "columns": [
+        "name",
+        "type",
+        "part_id"
+      ],
+      "relationships": []
+    },
+    "customers": {
+      "files": [
+        "admin.js",
+        "customers.js",
+        "dashboard.js"
+      ],
+      "methods": [
+        "getAll",
+        "getById",
+        "create",
+        "update"
+      ],
+      "columns": [
+        "name",
+        "code",
+        "id",
+        "customer_id"
+      ],
+      "relationships": []
+    },
+    "suppliers": {
+      "files": [
+        "admin.js"
+      ],
+      "methods": [
+        "getAll",
+        "create",
+        "update",
+        "delete"
+      ],
+      "columns": [
+        "name",
+        "type"
+      ],
+      "relationships": []
+    },
+    "inventory_lots": {
+      "files": [
+        "customers.js",
+        "dashboard.js",
+        "inventory.js",
+        "parts.js"
+      ],
+      "methods": [
+        "getAll",
+        "getById",
+        "create",
+        "update"
+      ],
+      "columns": [
+        "customer_id",
+        "created_at",
+        "status",
+        "expiration_date",
+        "lot_id",
+        "transaction_type",
+        "transaction_date",
+        "part_id"
+      ],
+      "relationships": []
+    },
+    "preadmissions": {
+      "files": [
+        "customers.js",
+        "dashboard.js",
+        "preadmission.js"
+      ],
+      "methods": [
+        "getAll",
+        "getById",
+        "update",
+        "delete"
+      ],
+      "columns": [
+        "created_at",
+        "status"
+      ],
+      "relationships": []
+    },
+    "transactions": {
+      "files": [
+        "dashboard.js",
+        "inventory.js"
+      ],
+      "methods": [
+        "getAll",
+        "create"
+      ],
+      "columns": [
+        "transaction_date"
+      ],
+      "relationships": []
+    },
+    "storage_locations": {
+      "files": [
+        "locations.js"
+      ],
+      "methods": [
+        "getAll",
+        "getById",
+        "create",
+        "update"
+      ],
+      "columns": [],
+      "relationships": []
+    },
+    "material_indices": {
+      "files": [
+        "materials.js"
+      ],
+      "methods": [
+        "getAll",
+        "getById",
+        "create",
+        "update"
+      ],
+      "columns": [
+        "description"
+      ],
+      "relationships": []
+    },
+    "preadmission_line_items": {
+      "files": [
+        "preadmission.js"
+      ],
+      "methods": [
+        "getAll"
+      ],
+      "columns": [
+        "preadmission_id"
+      ],
+      "relationships": []
+    },
+    "inventory": {
+      "files": [
+        "preshipments.js"
+      ],
+      "methods": [
+        "getAll"
+      ],
+      "columns": [
+        "part_id"
+      ],
+      "relationships": []
+    },
+    "preshipments": {
+      "files": [
+        "preshipments.js"
+      ],
+      "methods": [
+        "getAll",
+        "getById",
+        "create",
+        "update",
+        "delete"
+      ],
+      "columns": [
+        "stage",
+        "type",
+        "customerId",
+        "entry_summary_status",
+        "shipmentId",
+        "entryNumber",
+        "created_at",
+        "priority"
+      ],
+      "relationships": []
+    }
+  },
+  "actualTables": {
+    "customers": {
+      "exists": true,
+      "columns": [
+        "id",
+        "name",
+        "ein",
+        "address",
+        "broker_name",
+        "contact_email"
+      ],
+      "rowCount": 6
+    },
+    "parts": {
+      "exists": true,
+      "columns": [
+        "id",
+        "description",
+        "hts_code",
+        "country_of_origin",
+        "standard_value",
+        "unit_of_measure",
+        "manufacturer_id",
+        "gross_weight",
+        "package_quantity",
+        "package_type",
+        "material_price",
+        "labor_price",
+        "overhead_price",
+        "price_source",
+        "last_price_update",
+        "material_weight",
+        "material"
+      ],
+      "rowCount": 49
+    },
+    "suppliers": {
+      "exists": true,
+      "columns": [
+        "id",
+        "name",
+        "ein",
+        "address",
+        "broker_name",
+        "contact_email",
+        "phone",
+        "contact_person",
+        "supplier_type",
+        "country",
+        "notes",
+        "created_at",
+        "updated_at",
+        "broker_contact",
+        "broker_contact_email",
+        "broker_contact_phone"
+      ],
+      "rowCount": 6
+    },
+    "inventory_lots": {
+      "exists": true,
+      "columns": [],
+      "rowCount": 0
+    },
+    "preadmissions": {
+      "exists": true,
+      "columns": [],
+      "rowCount": 0
+    },
+    "transactions": {
+      "exists": true,
+      "columns": [],
+      "rowCount": 0
+    },
+    "storage_locations": {
+      "exists": true,
+      "columns": [
+        "id",
+        "location_code",
+        "location_type",
+        "zone",
+        "aisle",
+        "level",
+        "position",
+        "capacity_weight_kg",
+        "capacity_volume_m3",
+        "is_active",
+        "notes",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "description"
+      ],
+      "rowCount": 10
+    },
+    "material_indices": {
+      "exists": true,
+      "columns": [],
+      "rowCount": 0
+    },
+    "preshipments": {
+      "exists": true,
+      "columns": [],
+      "rowCount": 0
+    }
+  },
+  "issues": [
+    {
+      "type": "missing_column",
+      "table": "parts",
+      "column": "name",
+      "severity": "high"
+    },
+    {
+      "type": "missing_column",
+      "table": "parts",
+      "column": "type",
+      "severity": "high"
+    },
+    {
+      "type": "missing_column",
+      "table": "parts",
+      "column": "part_id",
+      "severity": "high"
+    },
+    {
+      "type": "missing_column",
+      "table": "customers",
+      "column": "code",
+      "severity": "high"
+    },
+    {
+      "type": "missing_column",
+      "table": "customers",
+      "column": "customer_id",
+      "severity": "high"
+    },
+    {
+      "type": "missing_column",
+      "table": "suppliers",
+      "column": "type",
+      "severity": "high"
+    },
+    {
+      "type": "missing_table",
+      "table": "preadmission_line_items",
+      "severity": "critical"
+    },
+    {
+      "type": "missing_table",
+      "table": "inventory",
+      "severity": "critical"
+    },
+    {
+      "type": "wrong_table_name",
+      "wrongName": "inventory_transactions",
+      "correctName": "transactions",
+      "severity": "high"
+    },
+    {
+      "type": "wrong_table_name",
+      "wrongName": "materials",
+      "correctName": "material_indices",
+      "severity": "high"
+    },
+    {
+      "type": "wrong_table_name",
+      "wrongName": "locations",
+      "correctName": "storage_locations",
+      "severity": "high"
+    },
+    {
+      "type": "missing_column",
+      "table": "parts",
+      "column": "active",
+      "issue": "Column does not exist",
+      "severity": "high"
+    },
+    {
+      "type": "missing_column",
+      "table": "customers",
+      "column": "active",
+      "issue": "Column does not exist",
+      "severity": "high"
+    },
+    {
+      "type": "missing_column",
+      "table": "customers",
+      "column": "status",
+      "issue": "Column does not exist",
+      "severity": "high"
+    },
+    {
+      "type": "missing_column",
+      "table": "inventory_lots",
+      "column": "lot_number",
+      "issue": "Column does not exist",
+      "severity": "high"
+    },
+    {
+      "type": "missing_column",
+      "table": "inventory_lots",
+      "column": "active",
+      "issue": "Column does not exist",
+      "severity": "high"
+    },
+    {
+      "type": "missing_column",
+      "table": "preadmissions",
+      "column": "entry_date",
+      "issue": "Column does not exist",
+      "severity": "high"
+    },
+    {
+      "type": "missing_column",
+      "table": "suppliers",
+      "column": "company_name",
+      "issue": "Column does not exist (should be \"name\")",
+      "severity": "high"
+    }
+  ],
+  "summary": {
+    "totalIssues": 18,
+    "criticalIssues": 2,
+    "highSeverityIssues": 16,
+    "tablesExpected": 11,
+    "tablesExisting": 9
+  }
+}
