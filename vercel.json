@@ -1,8 +1,5 @@
 {
   "version": 2,
-  "buildCommand": "cd src/frontend && CI=false npm run build",
-  "outputDirectory": "src/frontend/build",
-  "installCommand": "npm install && cd src/frontend && npm install",
   "functions": {
     "api/**/*.js": {
       "runtime": "@vercel/node@3.0.7"
@@ -18,9 +15,6 @@
       "destination": "/api/$1"
     }
   ],
-  "env": {
-    "NODE_ENV": "production"
-  },
   "headers": [
     {
       "source": "/api/(.*)",
