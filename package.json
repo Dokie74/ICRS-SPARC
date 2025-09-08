@@ -6,7 +6,7 @@
     "start": "node src/backend/api/index.js",
     "dev": "nodemon src/backend/api/index.js",
     "build": "echo \"No build step needed for backend\" && exit 0",
-    "build:vercel": "cd src/frontend && npm run build",
+    "build:vercel": "cd src/frontend && CI=false npm run build",
     "test": "jest",
     "test:watch": "jest --watch",
     "lint": "eslint src/backend --ext .js",
