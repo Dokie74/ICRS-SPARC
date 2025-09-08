@@ -1,7 +1,5 @@
 {
   "version": 2,
-  "buildCommand": "npm run build:frontend",
-  "installCommand": "npm install && cd src/frontend && npm install",
   "rewrites": [
     {
       "source": "/api/(.*)",
