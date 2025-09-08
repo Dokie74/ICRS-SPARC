@@ -27,12 +27,29 @@ if (!fs.existsSync(distDir)) {
   fs.mkdirSync(distDir, { recursive: true });
 }
 
-// Copy from src/frontend/build to dist
+// Copy from src/frontend/build to root (for Vercel)
 const buildDir = path.join(__dirname, '../src/frontend/build');
+const rootDir = path.join(__dirname, '..');
+
 if (fs.existsSync(buildDir)) {
-  console.log('Copying build files from src/frontend/build to dist...');
-  copyRecursiveSync(buildDir, distDir);
-  console.log('Build files copied successfully!');
+  console.log('Copying build files from src/frontend/build to root...');
+  
+  // Copy all files from build to root
+  fs.readdirSync(buildDir).forEach((file) => {
+    const srcFile = path.join(buildDir, file);
+    const destFile = path.join(rootDir, file);
+    
+    if (fs.statSync(srcFile).isDirectory()) {
+      copyRecursiveSync(srcFile, destFile);
+    } else {
+      // Don't overwrite package.json, vercel.json, etc.
+      if (!['package.json', 'vercel.json', 'package-lock.json'].includes(file)) {
+        fs.copyFileSync(srcFile, destFile);
+      }
+    }
+  });
+  
+  console.log('Build files copied to root successfully!');
 } else {
   console.error('Build directory not found at src/frontend/build');
   process.exit(1);

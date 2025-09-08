@@ -1,9 +1,7 @@
 {
   "version": 2,
   "buildCommand": "npm run build:frontend",
-  "outputDirectory": "dist",
   "installCommand": "npm install && cd src/frontend && npm install",
-  "cleanUrls": true,
   "rewrites": [
     {
       "source": "/api/(.*)",
