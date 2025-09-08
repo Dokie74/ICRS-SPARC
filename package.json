@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node src/backend/api/index.js",
     "dev": "nodemon src/backend/api/index.js",
-    "build": "cd src/frontend && npm install && npm run build && cd ../.. && node scripts/copy-build.js",
+    "build": "echo \"Build handled by vercel.json configuration\"",
     "build:vercel": "cd src/frontend && CI=false npm run build",
     "build:frontend": "cd src/frontend && npm run build && cd ../.. && node scripts/copy-build.js",
     "test": "jest",
