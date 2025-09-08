@@ -1,7 +1,7 @@
 // api/customers/index.js - Vercel serverless customers endpoint
-import { setCorsHeaders, handleOptions } from '../_utils/cors.js';
-import { requireAuth } from '../_utils/auth.js';
-import { SupabaseClient } from '../_utils/db.js';
+const { setCorsHeaders, handleOptions } = require('../_utils/cors');
+const { requireAuth } = require('../_utils/auth');
+const { SupabaseClient } = require('../_utils/db');
 
 async function handler(req, res) {
   // Handle CORS
@@ -74,4 +74,4 @@ async function handler(req, res) {
   }
 }
 
-export default requireAuth(handler);
+module.exports = requireAuth(handler);

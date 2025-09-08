@@ -1,13 +1,13 @@
 // api/auth/refresh.js - Vercel serverless token refresh endpoint
-import { createClient } from '@supabase/supabase-js';
-import { setCorsHeaders, handleOptions } from '../_utils/cors.js';
+const { createClient } = require('@supabase/supabase-js');
+const { setCorsHeaders, handleOptions } = require('../_utils/cors');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY
 );
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Handle CORS
   setCorsHeaders(res, req.headers.origin);
   if (handleOptions(req, res)) return;

@@ -42,3 +42,5 @@ export function requireAuth(handler) {
     }
   };
 }
+
+module.exports = { verifyToken, requireAuth };

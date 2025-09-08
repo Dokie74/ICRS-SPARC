@@ -1,5 +1,5 @@
 // api/_utils/cors.js - CORS utility for Vercel functions
-export function setCorsHeaders(res, origin) {
+function setCorsHeaders(res, origin) {
   const allowedOrigins = [
     'http://localhost:3000',
     'http://localhost:3001', 
@@ -19,7 +19,7 @@ export function setCorsHeaders(res, origin) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
 }
 
-export function handleOptions(req, res) {
+function handleOptions(req, res) {
   if (req.method === 'OPTIONS') {
     setCorsHeaders(res, req.headers.origin);
     res.status(200).end();
@@ -27,3 +27,5 @@ export function handleOptions(req, res) {
   }
   return false;
 }
+
+module.exports = { setCorsHeaders, handleOptions };

@@ -1,8 +1,8 @@
 // api/_utils/db.js - Database client utilities for Vercel functions
-import { createClient } from '@supabase/supabase-js';
+const { createClient } = require('@supabase/supabase-js');
 
 // Create Supabase client with service role for admin operations
-export function createSupabaseClient(accessToken = null) {
+function createSupabaseClient(accessToken = null) {
   const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_ANON_KEY
@@ -156,4 +156,4 @@ class SupabaseClient {
   }
 }
 
-export { SupabaseClient };
+module.exports = { createSupabaseClient, SupabaseClient };

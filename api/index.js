@@ -1,7 +1,7 @@
 // api/index.js - Vercel serverless API documentation endpoint
-import { setCorsHeaders, handleOptions } from './_utils/cors.js';
+const { setCorsHeaders, handleOptions } = require('./_utils/cors');
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Handle CORS
   setCorsHeaders(res, req.headers.origin);
   if (handleOptions(req, res)) return;
