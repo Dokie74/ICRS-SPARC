@@ -1,13 +1,16 @@
 {
   "version": 2,
+  "buildCommand": "npm run build:vercel",
+  "outputDirectory": "dist",
+  "installCommand": "npm install && cd src/frontend && npm install",
   "rewrites": [
-    {
-      "source": "/health",
-      "destination": "/api/health"
-    },
     {
       "source": "/api/(.*)",
       "destination": "/api/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/$1"
     }
   ],
   "headers": [

@@ -2,11 +2,11 @@
   "name": "icrs-sparc",
   "version": "1.0.0",
   "description": "ICRS SPARC - Foreign Trade Zone Operations Management System",
-  "main": "src/backend/api/index.js",
   "scripts": {
     "start": "node src/backend/api/index.js",
     "dev": "nodemon src/backend/api/index.js",
     "build": "echo \"No build step needed for backend\" && exit 0",
+    "build:vercel": "cd src/frontend && npm run build && mkdir -p ../../dist && cp -r build/* ../../dist/",
     "test": "jest",
     "test:watch": "jest --watch",
     "lint": "eslint src/backend --ext .js",
