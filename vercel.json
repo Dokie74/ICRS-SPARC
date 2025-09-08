@@ -3,13 +3,14 @@
   "buildCommand": "npm run build:frontend",
   "outputDirectory": "dist",
   "installCommand": "npm install && cd src/frontend && npm install",
+  "cleanUrls": true,
   "rewrites": [
     {
       "source": "/api/(.*)",
       "destination": "/api/$1"
     },
     {
-      "source": "/((?!api).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ],
