@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "buildCommand": "npm run build:full",
+  "buildCommand": "cd src/frontend && CI=false npm run build",
   "outputDirectory": "src/frontend/build",
-  "installCommand": "npm run install:all",
+  "installCommand": "npm install && cd src/frontend && npm install",
   "functions": {
     "api/**/*.js": {
       "runtime": "@vercel/node@3.0.7"
