@@ -12,6 +12,22 @@ module.exports = async function handler(req, res) {
   setCorsHeaders(res, req.headers.origin);
   if (handleOptions(req, res)) return;
 
+  // Check environment variables
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+    console.error('Missing Supabase environment variables:', {
+      url: !!process.env.SUPABASE_URL,
+      anon_key: !!process.env.SUPABASE_ANON_KEY
+    });
+    return res.status(500).json({
+      success: false,
+      error: 'Authentication service misconfigured',
+      debug: {
+        supabase_url: !!process.env.SUPABASE_URL,
+        supabase_anon_key: !!process.env.SUPABASE_ANON_KEY
+      }
+    });
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({
       success: false,
@@ -40,7 +56,12 @@ module.exports = async function handler(req, res) {
       console.error('Supabase auth error:', error);
       return res.status(401).json({
         success: false,
-        error: 'Invalid email or password'
+        error: 'Invalid email or password',
+        debug: {
+          message: error.message,
+          status: error.status,
+          code: error.code || 'unknown'
+        }
       });
     }
 
