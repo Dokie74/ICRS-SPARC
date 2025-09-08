@@ -234,7 +234,7 @@ class ApiClient {
   // Authentication API methods
   auth = {
     login: async (email, password) => {
-      const result = await this.post('/api/auth/login', { email, password });
+      const result = await this.post('/auth/login', { email, password });
       if (result.success && result.data) {
         // Handle auth response structure: result.data.session.access_token
         const token = result.data.session?.access_token || result.data.access_token;
@@ -245,12 +245,12 @@ class ApiClient {
     },
 
     register: async (userData) => {
-      return this.post('/api/auth/register', userData);
+      return this.post('/auth/register', userData);
     },
 
     logout: async () => {
       try {
-        await this.post('/api/auth/logout');
+        await this.post('/auth/logout');
       } finally {
         this.setToken(null);
         this.setUser(null);
@@ -258,7 +258,7 @@ class ApiClient {
     },
 
     refresh: async () => {
-      const result = await this.post('/api/auth/refresh');
+      const result = await this.post('/auth/refresh');
       if (result.success && result.data) {
         this.setToken(result.data.access_token);
         this.setUser(result.data.user);
@@ -267,185 +267,185 @@ class ApiClient {
     },
 
     getProfile: async () => {
-      return this.get('/api/auth/me');
+      return this.get('/auth/me');
     },
 
     updateProfile: async (profileData) => {
-      return this.put('/api/auth/me', profileData);
+      return this.put('/auth/me', profileData);
     }
   };
 
   // Inventory API methods
   inventory = {
     getLots: async (params = {}) => {
-      return this.get('/api/inventory/lots', params);
+      return this.get('/inventory/lots', params);
     },
 
     getLot: async (id) => {
-      return this.get(`/api/inventory/lots/${id}`);
+      return this.get(`/inventory/lots/${id}`);
     },
 
     createLot: async (lotData) => {
-      return this.post('/api/inventory/lots', lotData);
+      return this.post('/inventory/lots', lotData);
     },
 
     updateLot: async (id, lotData) => {
-      return this.put(`/api/inventory/lots/${id}`, lotData);
+      return this.put(`/inventory/lots/${id}`, lotData);
     },
 
     deleteLot: async (id) => {
-      return this.delete(`/api/inventory/lots/${id}`);
+      return this.delete(`/inventory/lots/${id}`);
     },
 
     getTransactions: async (params = {}) => {
-      return this.get('/api/inventory/transactions', params);
+      return this.get('/inventory/transactions', params);
     },
 
     createTransaction: async (transactionData) => {
-      return this.post('/api/inventory/transactions', transactionData);
+      return this.post('/inventory/transactions', transactionData);
     }
   };
 
   // Parts API methods
   parts = {
     getAll: async (params = {}) => {
-      return this.get('/api/parts', params);
+      return this.get('/parts', params);
     },
 
     getById: async (id) => {
-      return this.get(`/api/parts/${id}`);
+      return this.get(`/parts/${id}`);
     },
 
     create: async (partData) => {
-      return this.post('/api/parts', partData);
+      return this.post('/parts', partData);
     },
 
     update: async (id, partData) => {
-      return this.put(`/api/parts/${id}`, partData);
+      return this.put(`/parts/${id}`, partData);
     },
 
     delete: async (id) => {
-      return this.delete(`/api/parts/${id}`);
+      return this.delete(`/parts/${id}`);
     },
 
     search: async (query, params = {}) => {
-      return this.get('/api/parts/search', { q: query, ...params });
+      return this.get('/parts/search', { q: query, ...params });
     }
   };
 
   // Customers API methods
   customers = {
     getAll: async (params = {}) => {
-      return this.get('/api/customers', params);
+      return this.get('/customers', params);
     },
 
     getById: async (id) => {
-      return this.get(`/api/customers/${id}`);
+      return this.get(`/customers/${id}`);
     },
 
     create: async (customerData) => {
-      return this.post('/api/customers', customerData);
+      return this.post('/customers', customerData);
     },
 
     update: async (id, customerData) => {
-      return this.put(`/api/customers/${id}`, customerData);
+      return this.put(`/customers/${id}`, customerData);
     },
 
     delete: async (id) => {
-      return this.delete(`/api/customers/${id}`);
+      return this.delete(`/customers/${id}`);
     }
   };
 
   // Preadmission API methods
   preadmission = {
     getAll: async (params = {}) => {
-      return this.get('/api/preadmission', params);
+      return this.get('/preadmission', params);
     },
 
     getById: async (id) => {
-      return this.get(`/api/preadmission/${id}`);
+      return this.get(`/preadmission/${id}`);
     },
 
     create: async (preadmissionData) => {
-      return this.post('/api/preadmission', preadmissionData);
+      return this.post('/preadmission', preadmissionData);
     },
 
     update: async (id, preadmissionData) => {
-      return this.put(`/api/preadmission/${id}`, preadmissionData);
+      return this.put(`/preadmission/${id}`, preadmissionData);
     },
 
     delete: async (id) => {
-      return this.delete(`/api/preadmission/${id}`);
+      return this.delete(`/preadmission/${id}`);
     },
 
     updateStatus: async (id, status, notes = '') => {
-      return this.patch(`/api/preadmission/${id}/status`, { status, notes });
+      return this.patch(`/preadmission/${id}/status`, { status, notes });
     }
   };
 
   // Preshipment API methods
   preshipments = {
     getAll: async (params = {}) => {
-      return this.get('/api/preshipments', params);
+      return this.get('/preshipments', params);
     },
 
     getById: async (id) => {
-      return this.get(`/api/preshipments/${id}`);
+      return this.get(`/preshipments/${id}`);
     },
 
     create: async (preshipmentData) => {
-      return this.post('/api/preshipments', preshipmentData);
+      return this.post('/preshipments', preshipmentData);
     },
 
     update: async (id, preshipmentData) => {
-      return this.put(`/api/preshipments/${id}`, preshipmentData);
+      return this.put(`/preshipments/${id}`, preshipmentData);
     },
 
     delete: async (id) => {
-      return this.delete(`/api/preshipments/${id}`);
+      return this.delete(`/preshipments/${id}`);
     },
 
     updateStatus: async (id, status, notes = '') => {
-      return this.patch(`/api/preshipments/${id}/status`, { status, notes });
+      return this.patch(`/preshipments/${id}/status`, { status, notes });
     },
 
     generateEntryS: async (id) => {
-      return this.post(`/api/preshipments/${id}/generate-entry-summary`);
+      return this.post(`/preshipments/${id}/generate-entry-summary`);
     },
 
     fileWithCBP: async (id) => {
-      return this.post(`/api/preshipments/${id}/file-cbp`);
+      return this.post(`/preshipments/${id}/file-cbp`);
     },
 
     validateACEEntry: async (entryData) => {
-      return this.post('/api/preshipments/validate-ace-entry', entryData);
+      return this.post('/preshipments/validate-ace-entry', entryData);
     },
 
     getStats: async () => {
-      return this.get('/api/preshipments/stats/dashboard');
+      return this.get('/preshipments/stats/dashboard');
     }
   };
 
   // Dashboard API methods
   dashboard = {
     getStats: async () => {
-      return this.get('/api/dashboard/stats');
+      return this.get('/dashboard/stats');
     },
 
     getInventorySummary: async () => {
-      return this.get('/api/dashboard/inventory-summary');
+      return this.get('/dashboard/inventory-summary');
     },
 
     getRecentActivity: async (params = {}) => {
-      return this.get('/api/dashboard/recent-activity', params);
+      return this.get('/dashboard/recent-activity', params);
     },
 
     getAlerts: async () => {
-      return this.get('/api/dashboard/alerts');
+      return this.get('/dashboard/alerts');
     },
 
     getPerformanceMetrics: async (params = {}) => {
-      return this.get('/api/dashboard/performance', params);
+      return this.get('/dashboard/performance', params);
     }
   };
 
@@ -456,7 +456,7 @@ class ApiClient {
     },
 
     getApiInfo: async () => {
-      return this.get('/api');
+      return this.get('/');
     }
   };
 }
