@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node src/backend/api/index.js",
     "dev": "nodemon src/backend/api/index.js",
-    "build": "echo \"No build step needed for backend\" && exit 0",
+    "build": "cd src/frontend && npm install && npm run build && cd ../.. && node scripts/copy-build.js",
     "build:vercel": "cd src/frontend && CI=false npm run build",
     "build:frontend": "cd src/frontend && npm run build && cd ../.. && node scripts/copy-build.js",
     "test": "jest",
