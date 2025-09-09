@@ -189,14 +189,20 @@ const AddEmployeeModal = ({
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Department
           </label>
-          <input
-            type="text"
+          <select
             value={formData.department}
             onChange={(e) => handleInputChange('department', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter department"
             disabled={employeeMutation.isPending}
-          />
+          >
+            <option value="">Select Department</option>
+            <option value="administration">Administration</option>
+            <option value="warehouse">Warehouse</option>
+            <option value="customs">Customs</option>
+            <option value="logistics">Logistics</option>
+            <option value="finance">Finance</option>
+            <option value="it">IT</option>
+          </select>
         </div>
 
         {/* Phone Field */}

@@ -89,7 +89,6 @@ async function handler(req, res) {
         phone,
         status,
         is_active: status === 'active',
-        created_by: req.user?.id,
         email_confirmed: true,
         must_change_password: false
       };
@@ -134,7 +133,6 @@ async function handler(req, res) {
       
       // Add audit fields
       updateData.updated_at = new Date().toISOString();
-      updateData.updated_by = req.user?.id;
 
       const result = await supabaseClient.update('employees', id, updateData);
       
@@ -168,8 +166,7 @@ async function handler(req, res) {
         { 
           status: 'inactive',
           is_active: false,
-          updated_at: new Date().toISOString(),
-          updated_by: req.user?.id
+          updated_at: new Date().toISOString()
         }
       );
       
