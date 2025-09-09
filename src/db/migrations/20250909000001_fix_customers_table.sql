@@ -9,6 +9,7 @@ ADD COLUMN IF NOT EXISTS website VARCHAR(255),
 ADD COLUMN IF NOT EXISTS industry VARCHAR(100),
 ADD COLUMN IF NOT EXISTS notes TEXT,
 ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active',
+ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
 ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
 
 -- Update existing records to have created_at if missing
@@ -35,6 +36,7 @@ CREATE INDEX IF NOT EXISTS idx_customers_status ON customers(status);
 CREATE INDEX IF NOT EXISTS idx_customers_name ON customers(name);
 CREATE INDEX IF NOT EXISTS idx_customers_ein ON customers(ein);
 CREATE INDEX IF NOT EXISTS idx_customers_contact_email ON customers(contact_email);
+CREATE INDEX IF NOT EXISTS idx_customers_created_at ON customers(created_at);
 
 -- Update all existing customers to have active status
 UPDATE customers SET status = 'active' WHERE status IS NULL;
