@@ -75,60 +75,68 @@ const Admin = () => {
     enabled: selectedSection === 'parts' || selectedSection === null
   });
 
+  // Fetch employees data
+  const {
+    data: employees,
+    isLoading: employeesLoading,
+    error: employeesError
+  } = useQuery({
+    queryKey: ['admin', 'employees', filters.employees, searchTerm],
+    queryFn: () => apiClient.get('/admin/employees', {
+      ...filters.employees,
+      search: searchTerm,
+      limit: 100
+    }),
+    enabled: selectedSection === 'employees' || selectedSection === null
+  });
+
   // Mock data for other sections (these endpoints don't exist yet)
-  const employees = { success: true, data: [] };
   const suppliers = { success: true, data: [] };
   const locations = { success: true, data: [] };
-  const employeesLoading = false;
   const suppliersLoading = false;
   const locationsLoading = false;
 
   // Enhanced mutations for all entity types
   const deleteEmployeeMutation = useMutation({
-    mutationFn: (id) => apiClient.delete(`/api/admin/employees/${id}`),
+    mutationFn: (id) => apiClient.delete(`/admin/employees/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries(['admin', 'employees']);
-      queryClient.invalidateQueries(['admin', 'stats']);
       showSuccess('Employee deleted successfully');
     },
     onError: (error) => showError(error.message || 'Failed to delete employee')
   });
 
   const deletePartMutation = useMutation({
-    mutationFn: (id) => apiClient.delete(`/api/admin/parts/${id}`),
+    mutationFn: (id) => apiClient.parts.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries(['admin', 'parts']);
-      queryClient.invalidateQueries(['admin', 'stats']);
       showSuccess('Part deleted successfully');
     },
     onError: (error) => showError(error.message || 'Failed to delete part')
   });
 
   const deleteCustomerMutation = useMutation({
-    mutationFn: (id) => apiClient.delete(`/api/admin/customers/${id}`),
+    mutationFn: (id) => apiClient.customers.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries(['admin', 'customers']);
-      queryClient.invalidateQueries(['admin', 'stats']);
       showSuccess('Customer deleted successfully');
     },
     onError: (error) => showError(error.message || 'Failed to delete customer')
   });
 
   const deleteSupplierMutation = useMutation({
-    mutationFn: (id) => apiClient.delete(`/api/admin/suppliers/${id}`),
+    mutationFn: (id) => apiClient.delete(`/admin/suppliers/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries(['admin', 'suppliers']);
-      queryClient.invalidateQueries(['admin', 'stats']);
       showSuccess('Supplier deleted successfully');
     },
     onError: (error) => showError(error.message || 'Failed to delete supplier')
   });
 
   const toggleLocationMutation = useMutation({
-    mutationFn: ({ id, isActive }) => apiClient.patch(`/api/admin/locations/${id}`, { is_active: !isActive }),
+    mutationFn: ({ id, isActive }) => apiClient.patch(`/admin/locations/${id}`, { is_active: !isActive }),
     onSuccess: () => {
       queryClient.invalidateQueries(['admin', 'locations']);
-      queryClient.invalidateQueries(['admin', 'stats']);
       showSuccess('Location status updated successfully');
     },
     onError: (error) => showError(error.message || 'Failed to update location status')
@@ -502,115 +510,63 @@ const Admin = () => {
             <InlineLoader text="Loading employees..." />
           ) : employees?.success ? (
             <div className="space-y-4">
-              {/* Employee Filters */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-                  <select
-                    className="w-full border border-gray-300 rounded-md px-3 py-2"
-                    value={filters.employees.department}
-                    onChange={(e) => setFilters(prev => ({
-                      ...prev,
-                      employees: { ...prev.employees, department: e.target.value }
-                    }))}
-                  >
-                    <option value="">All Departments</option>
-                    <option value="warehouse">Warehouse</option>
-                    <option value="admin">Administration</option>
-                    <option value="customs">Customs</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                  <select
-                    className="w-full border border-gray-300 rounded-md px-3 py-2"
-                    value={filters.employees.role}
-                    onChange={(e) => setFilters(prev => ({
-                      ...prev,
-                      employees: { ...prev.employees, role: e.target.value }
-                    }))}
-                  >
-                    <option value="">All Roles</option>
-                    <option value="admin">Administrator</option>
-                    <option value="manager">Manager</option>
-                    <option value="warehouse_staff">Warehouse Staff</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                  <select
-                    className="w-full border border-gray-300 rounded-md px-3 py-2"
-                    value={filters.employees.status}
-                    onChange={(e) => setFilters(prev => ({
-                      ...prev,
-                      employees: { ...prev.employees, status: e.target.value }
-                    }))}
-                  >
-                    <option value="">All</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Employee List */}
-              <div className="bg-white rounded-lg border">
-                <div className="px-4 py-3 border-b border-gray-200">
-                  <h4 className="text-lg font-medium text-gray-900">Employee Records</h4>
-                </div>
-                <div className="divide-y divide-gray-200">
-                  {employees.data?.map((employee) => (
-                    <div key={employee.id} className="px-4 py-4 hover:bg-gray-50">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="flex-shrink-0">
-                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                              <i className="fas fa-user text-blue-600"></i>
+              {employees.data?.length > 0 ? (
+                <div className="bg-white rounded-lg border">
+                  <div className="px-4 py-3 border-b border-gray-200">
+                    <h4 className="text-lg font-medium text-gray-900">Employee Records</h4>
+                  </div>
+                  <div className="divide-y divide-gray-200">
+                    {employees.data.map((employee) => (
+                      <div key={employee.id} className="px-4 py-4 hover:bg-gray-50">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className="flex-shrink-0">
+                              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <i className="fas fa-user text-blue-600"></i>
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {employee.name}
+                              </div>
+                              <div className="text-sm text-gray-500">{employee.email}</div>
+                              <div className="text-xs text-gray-400">
+                                {employee.role} • {employee.department}
+                              </div>
                             </div>
                           </div>
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">
-                              {employee.first_name} {employee.last_name}
-                            </div>
-                            <div className="text-sm text-gray-500">{employee.email}</div>
-                            <div className="text-xs text-gray-400">
-                              {employee.role} • {employee.department}
-                            </div>
+                          <div className="flex items-center space-x-2">
+                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                              employee.status === 'active' 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {employee.status}
+                            </span>
+                            <button
+                              onClick={() => handleEdit('employee', employee)}
+                              className="text-blue-600 hover:text-blue-800"
+                            >
+                              <i className="fas fa-edit"></i>
+                            </button>
+                            <button
+                              onClick={() => handleDelete('employee', employee)}
+                              className="text-red-600 hover:text-red-800"
+                            >
+                              <i className="fas fa-trash"></i>
+                            </button>
                           </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                            employee.status === 'active' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {employee.status}
-                          </span>
-                          <button
-                            onClick={() => handleEdit('employee', employee)}
-                            className="text-blue-600 hover:text-blue-800"
-                          >
-                            <i className="fas fa-edit"></i>
-                          </button>
-                          <button
-                            onClick={() => handleDelete('employee', employee)}
-                            className="text-red-600 hover:text-red-800"
-                          >
-                            <i className="fas fa-trash"></i>
-                          </button>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-
-              {/* Batch Upload */}
-              <BatchUploader
-                uploadType="employees"
-                templateUrl="/templates/employees-template.csv"
-                onUploadSuccess={(data) => handleUploadSuccess('employees', data)}
-              />
+              ) : (
+                <div className="text-center py-8">
+                  <i className="fas fa-users text-4xl text-gray-300 mb-4"></i>
+                  <p className="text-gray-500">No employees found. Click "Add Employee" to get started.</p>
+                </div>
+              )}
             </div>
           ) : (
             <p className="text-gray-500 text-center py-8">No employee data available</p>

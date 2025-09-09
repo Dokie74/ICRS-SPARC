@@ -31,9 +31,9 @@ const AddEmployeeModal = ({
   const employeeMutation = useMutation({
     mutationFn: async (data) => {
       if (isEdit) {
-        return apiClient.put(`/api/admin/employees/${employee.id}`, data);
+        return apiClient.put(`/admin/employees/${employee.id}`, data);
       } else {
-        return apiClient.post('/api/admin/employees', data);
+        return apiClient.post('/admin/employees', data);
       }
     },
     onSuccess: (response) => {
