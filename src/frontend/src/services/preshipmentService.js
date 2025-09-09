@@ -110,7 +110,7 @@ class PreshipmentService {
   // Get available inventory lots for line item selection
   async getAvailableLots(params = {}) {
     try {
-      const result = await apiClient.get('/api/inventory/lots/available', params);
+      const result = await apiClient.get('/inventory/lots/available', params);
       return result;
     } catch (error) {
       console.error('Error fetching available lots:', error);

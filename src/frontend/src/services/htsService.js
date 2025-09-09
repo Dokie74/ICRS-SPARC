@@ -116,7 +116,7 @@ class HTSService {
       ...(countryOfOrigin && { countryOfOrigin })
     };
 
-    const cacheKey = this._createCacheKey('/api/hts', { action: 'search', ...params });
+    const cacheKey = this._createCacheKey('/hts', { action: 'search', ...params });
     
     // Check cache first
     const cached = this._getCachedData(cacheKey);
@@ -132,7 +132,7 @@ class HTSService {
         limit: params.limit,
         ...(params.countryOfOrigin && { countryOfOrigin: params.countryOfOrigin })
       };
-      const response = await apiClient.get('/api/hts', queryParams);
+      const response = await apiClient.get('/hts', queryParams);
       
       const result = {
         success: true,
@@ -174,7 +174,7 @@ class HTSService {
       htsCode,
       ...(countryOfOrigin && { countryOfOrigin })
     };
-    const cacheKey = this._createCacheKey('/api/hts', queryParams);
+    const cacheKey = this._createCacheKey('/hts', queryParams);
     
     // Check cache first
     const cached = this._getCachedData(cacheKey);
@@ -183,7 +183,7 @@ class HTSService {
     }
 
     try {
-      const response = await apiClient.get('/api/hts', queryParams);
+      const response = await apiClient.get('/hts', queryParams);
       
       const result = {
         success: true,
@@ -209,7 +209,7 @@ class HTSService {
       return { success: false, error: 'HTS code and country of origin are required' };
     }
 
-    const cacheKey = this._createCacheKey('/api/hts', { action: 'duty-rate', htsCode, countryOfOrigin });
+    const cacheKey = this._createCacheKey('/hts', { action: 'duty-rate', htsCode, countryOfOrigin });
     
     // Check cache first
     const cached = this._getCachedData(cacheKey);
@@ -218,7 +218,7 @@ class HTSService {
     }
 
     try {
-      const response = await apiClient.post('/api/hts?action=duty-rate', {
+      const response = await apiClient.post('/hts?action=duty-rate', {
         htsCode,
         countryOfOrigin
       });
@@ -244,7 +244,7 @@ class HTSService {
   // Get popular/commonly used HTS codes
   async getPopularCodes(limit = 20) {
     const queryParams = { action: 'popular', limit };
-    const cacheKey = this._createCacheKey('/api/hts', queryParams);
+    const cacheKey = this._createCacheKey('/hts', queryParams);
     
     // Check cache first
     const cached = this._getCachedData(cacheKey);
@@ -253,7 +253,7 @@ class HTSService {
     }
 
     try {
-      const response = await apiClient.get('/api/hts', queryParams);
+      const response = await apiClient.get('/hts', queryParams);
       
       const result = {
         success: true,
@@ -276,7 +276,7 @@ class HTSService {
   // Get list of supported countries
   async getCountries() {
     const queryParams = { action: 'countries' };
-    const cacheKey = this._createCacheKey('/api/hts', queryParams);
+    const cacheKey = this._createCacheKey('/hts', queryParams);
     
     // Check cache first
     const cached = this._getCachedData(cacheKey);
@@ -285,7 +285,7 @@ class HTSService {
     }
 
     try {
-      const response = await apiClient.get('/api/hts', queryParams);
+      const response = await apiClient.get('/hts', queryParams);
       
       const result = {
         success: true,
@@ -314,7 +314,7 @@ class HTSService {
     } = options;
 
     const queryParams = { action: 'browse', offset, limit, includeHeaders };
-    const cacheKey = this._createCacheKey('/api/hts', queryParams);
+    const cacheKey = this._createCacheKey('/hts', queryParams);
     
     // Check cache first
     const cached = this._getCachedData(cacheKey);
@@ -323,7 +323,7 @@ class HTSService {
     }
 
     try {
-      const response = await apiClient.get('/api/hts', queryParams);
+      const response = await apiClient.get('/hts', queryParams);
       
       const result = {
         success: true,
@@ -347,7 +347,7 @@ class HTSService {
   // Get HTS service status
   async getStatus() {
     try {
-      const response = await apiClient.get('/api/hts', { action: 'status' });
+      const response = await apiClient.get('/hts', { action: 'status' });
       
       return {
         success: true,
@@ -365,7 +365,7 @@ class HTSService {
   // Refresh HTS data (admin only)
   async refreshData() {
     try {
-      const response = await apiClient.post('/api/hts?action=refresh');
+      const response = await apiClient.post('/hts?action=refresh');
       
       // Clear cache after refresh
       this.cache.clear();

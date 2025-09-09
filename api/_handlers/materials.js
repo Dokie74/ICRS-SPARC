@@ -16,19 +16,19 @@ async function handler(req, res) {
       const { search, limit, offset } = req.query;
       
       let options = {
-        select: 'id, material_code, name, description, category, unit_of_measure, density, hazardous, notes, status, created_at',
+        select: 'id, name, code, category, created_at, updated_at',
         limit: limit ? parseInt(limit) : 50,
         offset: offset ? parseInt(offset) : 0
       };
 
       if (search) {
-        // Search by material code or name
+        // Search by code or name
         options.filters = {
-          or: `material_code.ilike.%${search}%,name.ilike.%${search}%`
+          or: `code.ilike.%${search}%,name.ilike.%${search}%`
         };
       }
 
-      const result = await supabaseClient.getAll('materials', options);
+      const result = await supabaseClient.getAll('material_indices', options);
       
       if (result.success) {
         res.json({
@@ -46,7 +46,7 @@ async function handler(req, res) {
       // Create new material
       const materialData = req.body;
       
-      const result = await supabaseClient.create('materials', materialData);
+      const result = await supabaseClient.create('material_indices', materialData);
       
       if (result.success) {
         res.status(201).json({

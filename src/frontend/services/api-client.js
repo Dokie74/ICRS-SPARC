@@ -208,7 +208,7 @@ class ApiClient {
   // Authentication API methods
   auth = {
     login: async (email, password) => {
-      const result = await this.post('/api/auth/login', { email, password });
+      const result = await this.post('/auth/login', { email, password });
       if (result.success && result.data) {
         this.setToken(result.data.access_token);
         this.setUser(result.data.user);
@@ -217,12 +217,12 @@ class ApiClient {
     },
 
     register: async (userData) => {
-      return this.post('/api/auth/register', userData);
+      return this.post('/auth/register', userData);
     },
 
     logout: async () => {
       try {
-        await this.post('/api/auth/logout');
+        await this.post('/auth/logout');
       } finally {
         this.setToken(null);
         this.setUser(null);
@@ -230,7 +230,7 @@ class ApiClient {
     },
 
     refresh: async () => {
-      const result = await this.post('/api/auth/refresh');
+      const result = await this.post('/auth/refresh');
       if (result.success && result.data) {
         this.setToken(result.data.access_token);
         this.setUser(result.data.user);
@@ -239,18 +239,18 @@ class ApiClient {
     },
 
     getProfile: async () => {
-      return this.get('/api/auth/profile');
+      return this.get('/auth/profile');
     },
 
     updateProfile: async (profileData) => {
-      return this.put('/api/auth/profile', profileData);
+      return this.put('/auth/profile', profileData);
     }
   };
 
   // Inventory API methods
   inventory = {
     getLots: async (params = {}) => {
-      return this.get('/api/inventory/lots', params);
+      return this.get('/inventory/lots', params);
     },
 
     getLot: async (id) => {
@@ -258,7 +258,7 @@ class ApiClient {
     },
 
     createLot: async (lotData) => {
-      return this.post('/api/inventory/lots', lotData);
+      return this.post('/inventory/lots', lotData);
     },
 
     updateLot: async (id, lotData) => {
@@ -270,18 +270,18 @@ class ApiClient {
     },
 
     getTransactions: async (params = {}) => {
-      return this.get('/api/inventory/transactions', params);
+      return this.get('/inventory/transactions', params);
     },
 
     createTransaction: async (transactionData) => {
-      return this.post('/api/inventory/transactions', transactionData);
+      return this.post('/inventory/transactions', transactionData);
     }
   };
 
   // Parts API methods
   parts = {
     getAll: async (params = {}) => {
-      return this.get('/api/parts', params);
+      return this.get('/parts', params);
     },
 
     getById: async (id) => {
@@ -289,7 +289,7 @@ class ApiClient {
     },
 
     create: async (partData) => {
-      return this.post('/api/parts', partData);
+      return this.post('/parts', partData);
     },
 
     update: async (id, partData) => {
@@ -301,14 +301,14 @@ class ApiClient {
     },
 
     search: async (query, params = {}) => {
-      return this.get('/api/parts/search', { q: query, ...params });
+      return this.get('/parts/search', { q: query, ...params });
     }
   };
 
   // Customers API methods
   customers = {
     getAll: async (params = {}) => {
-      return this.get('/api/customers', params);
+      return this.get('/customers', params);
     },
 
     getById: async (id) => {
@@ -316,7 +316,7 @@ class ApiClient {
     },
 
     create: async (customerData) => {
-      return this.post('/api/customers', customerData);
+      return this.post('/customers', customerData);
     },
 
     update: async (id, customerData) => {
@@ -331,7 +331,7 @@ class ApiClient {
   // Preadmission API methods
   preadmission = {
     getAll: async (params = {}) => {
-      return this.get('/api/preadmission', params);
+      return this.get('/preadmission', params);
     },
 
     getById: async (id) => {
@@ -339,7 +339,7 @@ class ApiClient {
     },
 
     create: async (preadmissionData) => {
-      return this.post('/api/preadmission', preadmissionData);
+      return this.post('/preadmission', preadmissionData);
     },
 
     update: async (id, preadmissionData) => {
@@ -358,23 +358,23 @@ class ApiClient {
   // Dashboard API methods
   dashboard = {
     getStats: async () => {
-      return this.get('/api/dashboard/stats');
+      return this.get('/dashboard/stats');
     },
 
     getInventorySummary: async () => {
-      return this.get('/api/dashboard/inventory-summary');
+      return this.get('/dashboard/inventory-summary');
     },
 
     getRecentActivity: async (params = {}) => {
-      return this.get('/api/dashboard/recent-activity', params);
+      return this.get('/dashboard/recent-activity', params);
     },
 
     getAlerts: async () => {
-      return this.get('/api/dashboard/alerts');
+      return this.get('/dashboard/alerts');
     },
 
     getPerformanceMetrics: async (params = {}) => {
-      return this.get('/api/dashboard/performance', params);
+      return this.get('/dashboard/performance', params);
     }
   };
 

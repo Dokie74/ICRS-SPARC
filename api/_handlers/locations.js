@@ -16,19 +16,19 @@ async function handler(req, res) {
       const { search, limit, offset } = req.query;
       
       let options = {
-        select: 'id, location_code, name, address, type, capacity, notes, status, created_at',
+        select: 'id, location_code, description, zone, aisle, level, position, created_at, updated_at',
         limit: limit ? parseInt(limit) : 50,
         offset: offset ? parseInt(offset) : 0
       };
 
       if (search) {
-        // Search by location code or name
+        // Search by location code or description
         options.filters = {
-          or: `location_code.ilike.%${search}%,name.ilike.%${search}%`
+          or: `location_code.ilike.%${search}%,description.ilike.%${search}%`
         };
       }
 
-      const result = await supabaseClient.getAll('locations', options);
+      const result = await supabaseClient.getAll('storage_locations', options);
       
       if (result.success) {
         res.json({
@@ -46,7 +46,7 @@ async function handler(req, res) {
       // Create new location
       const locationData = req.body;
       
-      const result = await supabaseClient.create('locations', locationData);
+      const result = await supabaseClient.create('storage_locations', locationData);
       
       if (result.success) {
         res.status(201).json({

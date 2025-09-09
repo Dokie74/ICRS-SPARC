@@ -60,7 +60,7 @@ const AddSupplierModal = ({
       if (isEdit) {
         return apiClient.put(`/api/admin/suppliers/${supplier.id}`, submitData);
       } else {
-        return apiClient.post('/api/admin/suppliers', submitData);
+        return apiClient.post('/admin/suppliers', submitData);
       }
     },
     onSuccess: (response) => {

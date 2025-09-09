@@ -303,7 +303,7 @@ export const AppProvider = ({ children }) => {
     dispatch({ type: APP_ACTIONS.SET_LOADING, payload: { key: 'locations', value: true } });
     
     try {
-      const result = await apiClient.get('/api/locations', { limit: 1000, active: true });
+      const result = await apiClient.get('/locations', { limit: 1000, active: true });
       if (result.success) {
         dispatch({ type: APP_ACTIONS.SET_LOCATIONS, payload: result.data });
       }
@@ -321,7 +321,7 @@ export const AppProvider = ({ children }) => {
   // Load materials
   const loadMaterials = async () => {
     try {
-      const result = await apiClient.get('/api/materials');
+      const result = await apiClient.get('/materials');
       if (result.success) {
         dispatch({ type: APP_ACTIONS.SET_MATERIALS, payload: result.data });
       }

@@ -24,8 +24,15 @@ async function handler(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const pathname = url.pathname;
   
-  // Remove /api prefix if present (Vercel routing)
-  const path = pathname.startsWith('/api') ? pathname.substring(4) : pathname;
+  // Remove /api prefix(es) - handle double /api/api/ from frontend + Vercel routing
+  let path = pathname;
+  while (path.startsWith('/api')) {
+    path = path.substring(4);
+  }
+  // Ensure path starts with / for consistent routing
+  if (!path.startsWith('/')) {
+    path = '/' + path;
+  }
   
   try {
     // Route to appropriate handler based on path

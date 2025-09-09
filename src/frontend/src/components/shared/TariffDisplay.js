@@ -22,7 +22,7 @@ const TariffDisplay = ({
     error
   } = useQuery({
     queryKey: ['tariff', partData?.hts_code, partData?.country_of_origin],
-    queryFn: () => apiClient.get('/api/tariff/lookup', {
+    queryFn: () => apiClient.get('/tariff/lookup', {
       hts_code: partData?.hts_code,
       country: partData?.country_of_origin
     }),

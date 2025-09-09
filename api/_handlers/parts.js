@@ -16,15 +16,15 @@ async function handler(req, res) {
       const { search, limit, offset } = req.query;
       
       let options = {
-        select: 'id, part_number, description, manufacturer, unit_of_measure, unit_cost, weight, dimensions, status, created_at',
+        select: 'id, description, hts_code, country_of_origin, standard_value, unit_of_measure, manufacturer_id, gross_weight, package_quantity, package_type, material_price, labor_price, overhead_price, price_source, last_price_update, material_weight, material',
         limit: limit ? parseInt(limit) : 50,
         offset: offset ? parseInt(offset) : 0
       };
 
       if (search) {
-        // Search by part number or description
+        // Search by id or description (id serves as part number)
         options.filters = {
-          or: `part_number.ilike.%${search}%,description.ilike.%${search}%`
+          or: `id.ilike.%${search}%,description.ilike.%${search}%`
         };
       }
 
