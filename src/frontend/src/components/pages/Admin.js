@@ -46,29 +46,18 @@ const Admin = () => {
   const [selectedCustomers, setSelectedCustomers] = useState([]);
   const [selectedSuppliers, setSelectedSuppliers] = useState([]);
 
-  // Fetch admin statistics
+  // Fetch customers data (primary data source for dashboard)
   const {
-    data: adminStats,
-    isLoading: statsLoading,
-    error: statsError
+    data: customers,
+    isLoading: customersLoading
   } = useQuery({
-    queryKey: ['admin', 'stats'],
-    queryFn: () => apiClient.get('/api/admin/stats'),
-    refetchInterval: 60000
-  });
-
-  // Fetch employees data
-  const {
-    data: employees,
-    isLoading: employeesLoading,
-    error: employeesError
-  } = useQuery({
-    queryKey: ['admin', 'employees', filters.employees, searchTerm],
-    queryFn: () => apiClient.get('/api/admin/employees', {
-      ...filters.employees,
-      search: searchTerm
+    queryKey: ['admin', 'customers', filters.customers, searchTerm],
+    queryFn: () => apiClient.customers.getAll({
+      ...filters.customers,
+      search: searchTerm,
+      limit: 100
     }),
-    enabled: selectedSection === 'employees' || selectedSection === null
+    enabled: selectedSection === 'customers' || selectedSection === null
   });
 
   // Fetch parts data with enhanced filtering
@@ -78,51 +67,21 @@ const Admin = () => {
     error: partsError
   } = useQuery({
     queryKey: ['admin', 'parts', filters.parts, searchTerm],
-    queryFn: () => apiClient.get('/api/admin/parts-master', {
+    queryFn: () => apiClient.parts.getAll({
       ...filters.parts,
-      search: searchTerm
+      search: searchTerm,
+      limit: 100
     }),
     enabled: selectedSection === 'parts' || selectedSection === null
   });
 
-  // Fetch customers data
-  const {
-    data: customers,
-    isLoading: customersLoading
-  } = useQuery({
-    queryKey: ['admin', 'customers', filters.customers, searchTerm],
-    queryFn: () => apiClient.get('/api/admin/customers-master', {
-      ...filters.customers,
-      search: searchTerm
-    }),
-    enabled: selectedSection === 'customers' || selectedSection === null
-  });
-
-  // Fetch suppliers data
-  const {
-    data: suppliers,
-    isLoading: suppliersLoading
-  } = useQuery({
-    queryKey: ['admin', 'suppliers', filters.suppliers, searchTerm],
-    queryFn: () => apiClient.get('/api/admin/suppliers-master', {
-      ...filters.suppliers,
-      search: searchTerm
-    }),
-    enabled: selectedSection === 'suppliers' || selectedSection === null
-  });
-
-  // Fetch locations data
-  const {
-    data: locations,
-    isLoading: locationsLoading
-  } = useQuery({
-    queryKey: ['admin', 'locations', filters.locations, searchTerm],
-    queryFn: () => apiClient.get('/api/admin/storage-locations', {
-      ...filters.locations,
-      search: searchTerm
-    }),
-    enabled: selectedSection === 'locations' || selectedSection === null
-  });
+  // Mock data for other sections (these endpoints don't exist yet)
+  const employees = { success: true, data: [] };
+  const suppliers = { success: true, data: [] };
+  const locations = { success: true, data: [] };
+  const employeesLoading = false;
+  const suppliersLoading = false;
+  const locationsLoading = false;
 
   // Enhanced mutations for all entity types
   const deleteEmployeeMutation = useMutation({
@@ -183,8 +142,7 @@ const Admin = () => {
     totalEmployees: employees?.success ? employees.data?.length || 0 : 0,
     totalLocations: locations?.success ? locations.data?.length || 0 : 0,
     activeLocations: locations?.success ? locations.data?.filter(l => l.is_active).length || 0 : 0,
-    activeParts: parts?.success ? parts.data?.filter(p => p.standard_value > 0).length || 0 : 0,
-    partsWithHTS: parts?.success ? parts.data?.filter(p => p.hts_code).length || 0 : 0
+    activeParts: parts?.success ? parts.data?.filter(p => p.standard_value > 0).length || 0 : 0
   }), [parts, customers, suppliers, employees, locations]);
 
   const statCards = useMemo(() => [
@@ -221,12 +179,6 @@ const Admin = () => {
       value: dashboardStats.activeParts,
       icon: 'fas fa-dollar-sign',
       variant: 'success'
-    },
-    {
-      title: 'HTS Coded',
-      value: dashboardStats.partsWithHTS,
-      icon: 'fas fa-tag',
-      variant: 'primary'
     },
     {
       title: 'Storage Locations',
@@ -470,22 +422,6 @@ const Admin = () => {
     );
   }
 
-  if (statsError) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Admin System Unavailable</h2>
-          <p className="text-gray-600 mb-4">Unable to load admin data. Please try again later.</p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -500,15 +436,15 @@ const Admin = () => {
       </div>
 
       {/* Enhanced Statistics Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 mb-8">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 mb-8">
         {statCards.map((stat, index) => (
           <StatCard
             key={stat.title}
             title={stat.title}
-            value={statsLoading ? '...' : stat.value.toLocaleString()}
+            value={customersLoading || partsLoading ? '...' : stat.value.toLocaleString()}
             icon={stat.icon}
             variant={stat.variant}
-            loading={statsLoading}
+            loading={customersLoading || partsLoading}
             onClick={stat.onClick}
             className="cursor-pointer hover:shadow-lg transition-all duration-200"
           />
