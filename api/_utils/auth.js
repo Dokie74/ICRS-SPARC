@@ -1,12 +1,12 @@
 // api/_utils/auth.js - Authentication utilities for Vercel functions
-import { createClient } from '@supabase/supabase-js';
+const { createClient } = require('@supabase/supabase-js');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY
 );
 
-export async function verifyToken(authHeader) {
+async function verifyToken(authHeader) {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     throw new Error('No valid authorization token provided');
   }
@@ -26,7 +26,7 @@ export async function verifyToken(authHeader) {
   }
 }
 
-export function requireAuth(handler) {
+function requireAuth(handler) {
   return async (req, res) => {
     try {
       const auth = await verifyToken(req.headers.authorization);

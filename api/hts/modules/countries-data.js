@@ -1,7 +1,5 @@
-// api/hts/countries.js - HTS countries endpoint for Vercel
-const { setCorsHeaders, handleOptions } = require('../_utils/cors');
+// api/hts/modules/countries-data.js - Countries data for HTS API
 
-// Common countries with trade relationships to US
 const COUNTRIES_DATA = [
   { code: 'CA', name: 'Canada', region: 'North America', trade_agreement: 'USMCA' },
   { code: 'MX', name: 'Mexico', region: 'North America', trade_agreement: 'USMCA' },
@@ -56,65 +54,44 @@ const COUNTRIES_DATA = [
   { code: 'OM', name: 'Oman', region: 'Middle East', trade_agreement: 'USOFTA' }
 ];
 
-async function handler(req, res) {
-  // Handle CORS
-  setCorsHeaders(res, req.headers.origin);
-  if (handleOptions(req, res)) return;
-
-  try {
-    if (req.method === 'GET') {
-      const { region, trade_agreement_only, search } = req.query;
-      
-      let filteredCountries = [...COUNTRIES_DATA];
-      
-      // Filter by region if specified
-      if (region) {
-        filteredCountries = filteredCountries.filter(country => 
-          country.region.toLowerCase() === region.toLowerCase()
-        );
-      }
-      
-      // Filter by trade agreement if specified
-      if (trade_agreement_only === 'true') {
-        filteredCountries = filteredCountries.filter(country => 
-          country.trade_agreement !== null
-        );
-      }
-      
-      // Filter by search term if specified
-      if (search) {
-        const searchTerm = search.toLowerCase();
-        filteredCountries = filteredCountries.filter(country =>
-          country.name.toLowerCase().includes(searchTerm) ||
-          country.code.toLowerCase().includes(searchTerm)
-        );
-      }
-      
-      // Sort by name
-      filteredCountries.sort((a, b) => a.name.localeCompare(b.name));
-      
-      res.json({
-        success: true,
-        data: filteredCountries,
-        meta: {
-          total: filteredCountries.length,
-          available_regions: [...new Set(COUNTRIES_DATA.map(c => c.region))],
-          trade_agreements: [...new Set(COUNTRIES_DATA.map(c => c.trade_agreement).filter(Boolean))]
-        }
-      });
-    } else {
-      res.status(405).json({
-        success: false,
-        error: `Method ${req.method} not allowed`
-      });
-    }
-  } catch (error) {
-    console.error('HTS countries API error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Internal server error'
-    });
-  }
+function getCountrySpecificInfo(htsCode, countryCode) {
+  const countryCode_upper = countryCode.toUpperCase();
+  
+  const tradeAgreements = {
+    'CA': { name: 'USMCA', preferential: true },
+    'MX': { name: 'USMCA', preferential: true },
+    'CL': { name: 'US-Chile FTA', preferential: true },
+    'SG': { name: 'US-Singapore FTA', preferential: true },
+    'AU': { name: 'US-Australia FTA', preferential: true },
+    'BH': { name: 'US-Bahrain FTA', preferential: true },
+    'MA': { name: 'US-Morocco FTA', preferential: true },
+    'OM': { name: 'US-Oman FTA', preferential: true },
+    'PE': { name: 'US-Peru FTA', preferential: true },
+    'CO': { name: 'US-Colombia FTA', preferential: true },
+    'KR': { name: 'KORUS FTA', preferential: true },
+    'PA': { name: 'US-Panama FTA', preferential: true }
+  };
+  
+  const agreement = tradeAgreements[countryCode_upper];
+  
+  return {
+    country_code: countryCode_upper,
+    country_name: getCountryName(countryCode_upper),
+    trade_agreement: agreement ? agreement.name : null,
+    preferential_treatment: agreement ? agreement.preferential : false,
+    applicable_rate: agreement && agreement.preferential ? 'Free or Reduced' : 'General Rate',
+    origin_requirements: agreement ? 'Must meet origin requirements' : 'N/A',
+    notes: agreement ? `Preferential treatment available under ${agreement.name}` : 'General MFN rates apply'
+  };
 }
 
-module.exports = handler;
+function getCountryName(countryCode) {
+  const country = COUNTRIES_DATA.find(c => c.code === countryCode);
+  return country ? country.name : countryCode;
+}
+
+module.exports = {
+  COUNTRIES_DATA,
+  getCountrySpecificInfo,
+  getCountryName
+};

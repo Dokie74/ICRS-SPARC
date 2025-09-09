@@ -1,7 +1,5 @@
-// api/hts/browse.js - HTS browse endpoint for Vercel
-const { setCorsHeaders, handleOptions } = require('../_utils/cors');
+// api/hts/modules/browse-data.js - HTS browse data with hierarchical structure
 
-// Extended database with chapter headers for browsing
 const HTS_BROWSE_DATA = [
   // Chapter headers
   {
@@ -110,7 +108,7 @@ const HTS_BROWSE_DATA = [
     code: '847149',
     title: 'Other, presented in the form of systems',
     heading: '8471',
-    chapter: '84', 
+    chapter: '84',
     level: 'subheading'
   },
   {
@@ -193,106 +191,6 @@ const HTS_BROWSE_DATA = [
   }
 ];
 
-async function handler(req, res) {
-  // Handle CORS
-  setCorsHeaders(res, req.headers.origin);
-  if (handleOptions(req, res)) return;
-
-  try {
-    if (req.method === 'GET') {
-      const { 
-        offset = 0,
-        limit = 50,
-        includeHeaders = 'true',
-        level,
-        chapter,
-        heading,
-        subheading
-      } = req.query;
-      
-      let filteredData = [...HTS_BROWSE_DATA];
-      
-      // Filter by level if specified
-      if (level) {
-        filteredData = filteredData.filter(item => item.level === level);
-      }
-      
-      // Filter by chapter if specified
-      if (chapter) {
-        filteredData = filteredData.filter(item => 
-          item.chapter === chapter || item.code === chapter
-        );
-      }
-      
-      // Filter by heading if specified  
-      if (heading) {
-        filteredData = filteredData.filter(item =>
-          item.heading === heading || item.code === heading
-        );
-      }
-      
-      // Filter by subheading if specified
-      if (subheading) {
-        filteredData = filteredData.filter(item =>
-          item.subheading === subheading || item.code === subheading  
-        );
-      }
-      
-      // Exclude headers if requested
-      if (includeHeaders === 'false') {
-        filteredData = filteredData.filter(item => item.type === 'tariff_line');
-      }
-      
-      // Sort by code/hts_code
-      filteredData.sort((a, b) => {
-        const aCode = a.hts_code || a.code;
-        const bCode = b.hts_code || b.code;
-        return aCode.localeCompare(bCode);
-      });
-      
-      // Apply pagination
-      const offsetNum = parseInt(offset);
-      const limitNum = parseInt(limit);
-      const total = filteredData.length;
-      
-      if (limitNum > 0) {
-        filteredData = filteredData.slice(offsetNum, offsetNum + limitNum);
-      }
-      
-      res.json({
-        success: true,
-        data: filteredData,
-        meta: {
-          total: total,
-          offset: offsetNum,
-          limit: limitNum,
-          returned: filteredData.length,
-          has_more: offsetNum + filteredData.length < total,
-          filters_applied: {
-            level,
-            chapter, 
-            heading,
-            subheading,
-            include_headers: includeHeaders === 'true'
-          },
-          available_levels: ['chapter', 'heading', 'subheading', 'tariff_line'],
-          available_chapters: [...new Set(HTS_BROWSE_DATA.filter(item => item.chapter).map(item => item.chapter))].sort()
-        }
-      });
-      
-    } else {
-      res.status(405).json({
-        success: false,
-        error: `Method ${req.method} not allowed`
-      });
-    }
-  } catch (error) {
-    console.error('HTS browse API error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Internal server error'
-    });
-  }
-}
-
-module.exports = handler;
+module.exports = {
+  HTS_BROWSE_DATA
+};

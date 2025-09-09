@@ -1,7 +1,5 @@
-// api/hts/search.js - HTS search endpoint for Vercel
-const { setCorsHeaders, handleOptions } = require('../_utils/cors');
+// api/hts/modules/search-data.js - HTS codes database for search functionality
 
-// Extended HTS codes database for search functionality
 const HTS_CODES_DATABASE = [
   {
     hts_code: '8471.30.0100',
@@ -168,7 +166,6 @@ const HTS_CODES_DATABASE = [
     general_rate: '0%',
     special_rate: 'Free'
   },
-  // Add more codes for better search results
   {
     hts_code: '8471.41.0150',
     description: 'Automatic data processing machines, comprising in the same housing at least a central processing unit, desktop computers',
@@ -226,139 +223,6 @@ const HTS_CODES_DATABASE = [
   }
 ];
 
-async function handler(req, res) {
-  // Handle CORS
-  setCorsHeaders(res, req.headers.origin);
-  if (handleOptions(req, res)) return;
-
-  try {
-    if (req.method === 'GET') {
-      const { 
-        q: searchTerm,
-        type = 'description',
-        limit = 100,
-        countryOfOrigin,
-        category
-      } = req.query;
-      
-      if (!searchTerm || searchTerm.trim().length < 2) {
-        return res.json({
-          success: true,
-          data: [],
-          meta: {
-            total: 0,
-            search_term: searchTerm,
-            search_type: type
-          }
-        });
-      }
-      
-      const cleanSearchTerm = searchTerm.trim().toLowerCase();
-      let results = [];
-      
-      // Search based on type
-      if (type === 'code') {
-        // Search by HTS code
-        results = HTS_CODES_DATABASE.filter(item =>
-          item.hts_code.toLowerCase().includes(cleanSearchTerm) ||
-          item.hts_code.replace(/\./g, '').toLowerCase().includes(cleanSearchTerm.replace(/\./g, ''))
-        );
-      } else {
-        // Search by description (default)
-        results = HTS_CODES_DATABASE.filter(item =>
-          item.description.toLowerCase().includes(cleanSearchTerm) ||
-          item.category.toLowerCase().includes(cleanSearchTerm)
-        );
-      }
-      
-      // Filter by category if specified
-      if (category) {
-        results = results.filter(item =>
-          item.category.toLowerCase() === category.toLowerCase()
-        );
-      }
-      
-      // Sort results by relevance
-      results = results.sort((a, b) => {
-        // Prioritize exact code matches
-        if (type === 'code') {
-          const aExact = a.hts_code.toLowerCase() === cleanSearchTerm;
-          const bExact = b.hts_code.toLowerCase() === cleanSearchTerm;
-          if (aExact && !bExact) return -1;
-          if (!aExact && bExact) return 1;
-        } else {
-          // Prioritize matches at the beginning of description
-          const aStartsWith = a.description.toLowerCase().startsWith(cleanSearchTerm);
-          const bStartsWith = b.description.toLowerCase().startsWith(cleanSearchTerm);
-          if (aStartsWith && !bStartsWith) return -1;
-          if (!aStartsWith && bStartsWith) return 1;
-        }
-        
-        // Then sort by HTS code
-        return a.hts_code.localeCompare(b.hts_code);
-      });
-      
-      // Apply limit
-      const limitNum = parseInt(limit);
-      if (limitNum > 0 && limitNum < results.length) {
-        results = results.slice(0, limitNum);
-      }
-      
-      // Add country-specific duty rates if country is specified
-      if (countryOfOrigin) {
-        results = results.map(item => ({
-          ...item,
-          country_specific_rate: getCountrySpecificRate(item.hts_code, countryOfOrigin)
-        }));
-      }
-      
-      res.json({
-        success: true,
-        data: results,
-        meta: {
-          total: results.length,
-          search_term: searchTerm,
-          search_type: type,
-          country_of_origin: countryOfOrigin,
-          available_categories: [...new Set(HTS_CODES_DATABASE.map(c => c.category))],
-          total_database_entries: HTS_CODES_DATABASE.length
-        }
-      });
-      
-    } else {
-      res.status(405).json({
-        success: false,
-        error: `Method ${req.method} not allowed`
-      });
-    }
-  } catch (error) {
-    console.error('HTS search API error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Internal server error'
-    });
-  }
-}
-
-// Helper function to simulate country-specific duty rates
-function getCountrySpecificRate(htsCode, countryCode) {
-  // This is a simplified simulation - in real implementation,
-  // this would query actual trade agreement data
-  const tradeAgreements = {
-    'CA': 'Free', // USMCA
-    'MX': 'Free', // USMCA
-    'CN': 'Variable', // Varies by product and current trade relations
-    'GB': 'Standard', // Standard MFN rates
-    'DE': 'Standard'
-  };
-  
-  const agreement = tradeAgreements[countryCode?.toUpperCase()] || 'Standard';
-  
-  return {
-    applicable_rate: agreement === 'Free' ? '0%' : 'See tariff schedule',
-    trade_agreement: agreement,
-    notes: agreement === 'Free' ? 'Duty-free under trade agreement' : 'Standard MFN rates apply'
-  };
-}
-
-module.exports = handler;
+module.exports = {
+  HTS_CODES_DATABASE
+};

@@ -1,7 +1,5 @@
-// api/hts/popular.js - Popular HTS codes endpoint for Vercel
-const { setCorsHeaders, handleOptions } = require('../_utils/cors');
+// api/hts/modules/popular-codes-data.js - Popular HTS codes data
 
-// Popular HTS codes commonly used in imports
 const POPULAR_HTS_CODES = [
   {
     hts_code: '8471.30.0100',
@@ -165,83 +163,6 @@ const POPULAR_HTS_CODES = [
   }
 ];
 
-async function handler(req, res) {
-  // Handle CORS
-  setCorsHeaders(res, req.headers.origin);
-  if (handleOptions(req, res)) return;
-
-  try {
-    if (req.method === 'GET') {
-      const { 
-        limit = 20, 
-        category, 
-        usage_frequency,
-        search 
-      } = req.query;
-      
-      let filteredCodes = [...POPULAR_HTS_CODES];
-      
-      // Filter by category if specified
-      if (category) {
-        filteredCodes = filteredCodes.filter(code => 
-          code.category.toLowerCase() === category.toLowerCase()
-        );
-      }
-      
-      // Filter by usage frequency if specified
-      if (usage_frequency) {
-        filteredCodes = filteredCodes.filter(code => 
-          code.usage_frequency.toLowerCase() === usage_frequency.toLowerCase()
-        );
-      }
-      
-      // Filter by search term if specified
-      if (search) {
-        const searchTerm = search.toLowerCase();
-        filteredCodes = filteredCodes.filter(code =>
-          code.hts_code.includes(searchTerm) ||
-          code.description.toLowerCase().includes(searchTerm) ||
-          code.category.toLowerCase().includes(searchTerm)
-        );
-      }
-      
-      // Sort by usage frequency (Very High first, then High, Medium)
-      const frequencyOrder = { 'Very High': 3, 'High': 2, 'Medium': 1 };
-      filteredCodes.sort((a, b) => {
-        const freqDiff = frequencyOrder[b.usage_frequency] - frequencyOrder[a.usage_frequency];
-        if (freqDiff !== 0) return freqDiff;
-        return a.hts_code.localeCompare(b.hts_code);
-      });
-      
-      // Apply limit
-      const limitNum = parseInt(limit);
-      if (limitNum > 0) {
-        filteredCodes = filteredCodes.slice(0, limitNum);
-      }
-      
-      res.json({
-        success: true,
-        data: filteredCodes,
-        meta: {
-          total: filteredCodes.length,
-          available_categories: [...new Set(POPULAR_HTS_CODES.map(c => c.category))],
-          available_frequencies: [...new Set(POPULAR_HTS_CODES.map(c => c.usage_frequency))],
-          total_available: POPULAR_HTS_CODES.length
-        }
-      });
-    } else {
-      res.status(405).json({
-        success: false,
-        error: `Method ${req.method} not allowed`
-      });
-    }
-  } catch (error) {
-    console.error('HTS popular codes API error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Internal server error'
-    });
-  }
-}
-
-module.exports = handler;
+module.exports = {
+  POPULAR_HTS_CODES
+};
