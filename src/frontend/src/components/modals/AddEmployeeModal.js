@@ -198,10 +198,9 @@ const AddEmployeeModal = ({
             <option value="">Select Department</option>
             <option value="administration">Administration</option>
             <option value="warehouse">Warehouse</option>
-            <option value="customs">Customs</option>
-            <option value="logistics">Logistics</option>
-            <option value="finance">Finance</option>
-            <option value="it">IT</option>
+            <option value="management">Management</option>
+            <option value="shipping">Shipping</option>
+            <option value="receiving">Receiving</option>
           </select>
         </div>
 

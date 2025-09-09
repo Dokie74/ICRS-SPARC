@@ -21,20 +21,17 @@ async function handler(req, res) {
         offset: offset ? parseInt(offset) : 0
       };
 
-      // Build filters array
-      const filters = [];
-      if (role) filters.push({ column: 'role', value: role });
-      if (department) filters.push({ column: 'department', value: department });
-      if (status) filters.push({ column: 'status', value: status });
+      // Build filters object (SupabaseClient expects key-value pairs)
+      const filters = {};
+      if (role) filters.role = role;
+      if (department) filters.department = department;
+      if (status) filters.status = status;
       if (search) {
-        filters.push({ 
-          column: 'name', 
-          value: `%${search}%`, 
-          operator: 'ilike' 
-        });
+        // For search, use OR condition on name and email
+        filters.or = `name.ilike.%${search}%,email.ilike.%${search}%`;
       }
 
-      if (filters.length > 0) {
+      if (Object.keys(filters).length > 0) {
         options.filters = filters;
       }
 
@@ -68,9 +65,8 @@ async function handler(req, res) {
       const existingEmployee = await supabaseClient.getAll(
         'employees',
         {
-          filters: [{ column: 'email', value: email }],
-          limit: 1,
-          accessToken: req.accessToken
+          filters: { email: email },
+          limit: 1
         }
       );
 
