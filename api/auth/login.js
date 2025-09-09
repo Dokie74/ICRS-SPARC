@@ -28,6 +28,12 @@ module.exports = async function handler(req, res) {
     });
   }
 
+  // Log Supabase configuration for debugging (first few chars only)
+  console.log('Supabase config:', {
+    url: process.env.SUPABASE_URL?.substring(0, 30) + '...',
+    anon_key: process.env.SUPABASE_ANON_KEY?.substring(0, 20) + '...'
+  });
+
   if (req.method !== 'POST') {
     return res.status(405).json({
       success: false,
