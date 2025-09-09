@@ -172,7 +172,7 @@ class HTSService {
     }
 
     try {
-      const response = await apiClient.get(`/hts/code/${htsCode}`, { params });
+      const response = await apiClient.get(`/api/hts/code/${htsCode}`, { params });
       
       const result = {
         success: true,

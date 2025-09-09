@@ -10,6 +10,7 @@ import AddEmployeeModal from './AddEmployeeModal';
 import AddPartModal from './AddPartModal';
 import AddCustomerModal from './AddCustomerModal';
 import AddSupplierModal from './AddSupplierModal';
+import AddLocationModal from './AddLocationModal';
 import AddPreadmissionModal from './AddPreadmissionModal';
 import CreatePreshipmentModal from './CreatePreshipmentModal';
 import EnhancedQuarterlyUpdateModal from './EnhancedQuarterlyUpdateModal';
@@ -42,6 +43,11 @@ const ModalContainer = () => {
     'SupplierCreateModal': AddSupplierModal,
     'add-supplier-modal': AddSupplierModal,
     'edit-supplier-modal': AddSupplierModal,
+    
+    // Location Management
+    'LocationCreateModal': AddLocationModal,
+    'add-location-modal': AddLocationModal,
+    'edit-location-modal': AddLocationModal,
     
     // Pre-admission Workflows  
     'create-preadmission-modal': AddPreadmissionModal,
@@ -113,6 +119,9 @@ const ModalContainer = () => {
         
       case 'edit-supplier-modal':
         return { ...baseProps, supplier: modalData, isEdit: true };
+        
+      case 'edit-location-modal':
+        return { ...baseProps, location: modalData, isEdit: true };
         
       case 'edit-preadmission-modal':
         return { ...baseProps, preadmission: modalData, isEdit: true };

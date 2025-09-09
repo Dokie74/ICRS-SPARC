@@ -16,7 +16,7 @@ async function handler(req, res) {
       const { search, limit, offset } = req.query;
       
       let options = {
-        select: 'id, company_name, contact_person, email, phone, status, created_at',
+        select: 'id, name, contact_person, email, phone, status, created_at',
         limit: limit ? parseInt(limit) : 50,
         offset: offset ? parseInt(offset) : 0
       };
@@ -24,7 +24,7 @@ async function handler(req, res) {
       if (search) {
         // Note: This is simplified - in production you'd want more sophisticated search
         options.filters = {
-          company_name: search
+          name: search
         };
       }
 
