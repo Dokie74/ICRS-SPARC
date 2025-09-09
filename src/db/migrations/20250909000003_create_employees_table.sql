@@ -1,8 +1,11 @@
 -- Migration: Create employees table for user management
 -- This allows the admin interface to manage system users
 
--- Create employees table
-CREATE TABLE IF NOT EXISTS employees (
+-- Drop existing employees table if it exists (to handle any conflicts)
+DROP TABLE IF EXISTS employees CASCADE;
+
+-- Create employees table with all required columns
+CREATE TABLE employees (
   id SERIAL PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
   email VARCHAR(100) UNIQUE NOT NULL,
