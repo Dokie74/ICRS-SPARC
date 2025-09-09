@@ -182,6 +182,10 @@ class ApiClient {
       }
 
       if (!response.ok) {
+        // Temporary debug logging for auth issues
+        if (endpoint.includes('/auth/')) {
+          console.log('Auth error response:', { status: response.status, data });
+        }
         const error = new Error(data.error || `HTTP ${response.status}`);
         error.status = response.status;
         error.data = data;
