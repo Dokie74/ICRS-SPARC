@@ -4,10 +4,15 @@
   "buildCommand": "cd src/frontend && npm install && npm run build",
   "outputDirectory": "src/frontend/build",
   "installCommand": "npm install",
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 30
+    }
+  },
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api/$1"
+      "destination": "/api/index.js"
     },
     {
       "source": "/(.*)",
