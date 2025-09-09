@@ -16,7 +16,7 @@ async function handler(req, res) {
       const { search, limit, offset } = req.query;
       
       let options = {
-        select: 'id, name, contact_person, email, phone, status, created_at',
+        select: 'id, name, ein, address, broker_name, contact_email, phone, website, industry, notes, status, created_at',
         limit: limit ? parseInt(limit) : 50,
         offset: offset ? parseInt(offset) : 0
       };
