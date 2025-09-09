@@ -3,11 +3,11 @@ const { setCorsHeaders, handleOptions } = require('../_utils/cors');
 const { requireAuth } = require('../_utils/auth');
 
 // Import all HTS data and utilities
-const { COUNTRIES_DATA, getCountrySpecificInfo, getCountryName } = require('./modules/countries-data');
-const { POPULAR_HTS_CODES } = require('./modules/popular-codes-data');
-const { HTS_CODES_DATABASE } = require('./modules/search-data');
-const { HTS_BROWSE_DATA } = require('./modules/browse-data');
-const { DUTY_RATE_DATA, TRADE_AGREEMENTS } = require('./modules/duty-rate-data');
+const { COUNTRIES_DATA, getCountrySpecificInfo, getCountryName } = require('../../src/data/hts/countries-data');
+const { POPULAR_HTS_CODES } = require('../../src/data/hts/popular-codes-data');
+const { HTS_CODES_DATABASE } = require('../../src/data/hts/search-data');
+const { HTS_BROWSE_DATA } = require('../../src/data/hts/browse-data');
+const { DUTY_RATE_DATA, TRADE_AGREEMENTS } = require('../../src/data/hts/duty-rate-data');
 
 async function handler(req, res) {
   // Handle CORS
