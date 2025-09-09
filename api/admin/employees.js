@@ -16,7 +16,7 @@ async function handler(req, res) {
       const { search, role, department, status, limit, offset } = req.query;
       
       let options = {
-        select: 'id, name, email, role, department, phone, status, created_at, updated_at',
+        select: 'id, name, email, role, department, phone, status, is_active, created_at, updated_at',
         limit: limit ? parseInt(limit) : 50,
         offset: offset ? parseInt(offset) : 0
       };
@@ -88,7 +88,10 @@ async function handler(req, res) {
         department,
         phone,
         status,
-        created_by: req.user?.id
+        is_active: status === 'active',
+        created_by: req.user?.id,
+        email_confirmed: true,
+        must_change_password: false
       };
 
       const result = await supabaseClient.create('employees', employeeData);
@@ -122,6 +125,12 @@ async function handler(req, res) {
       delete updateData.id;
       delete updateData.created_at;
       delete updateData.created_by;
+      delete updateData.user_id; // Don't allow changing user_id
+      
+      // Sync status and is_active (the trigger will also handle this)
+      if (updateData.status) {
+        updateData.is_active = updateData.status === 'active';
+      }
       
       // Add audit fields
       updateData.updated_at = new Date().toISOString();
@@ -152,12 +161,13 @@ async function handler(req, res) {
         });
       }
 
-      // Soft delete by updating status
+      // Soft delete by updating status and is_active
       const result = await supabaseClient.update(
         'employees', 
         id, 
         { 
           status: 'inactive',
+          is_active: false,
           updated_at: new Date().toISOString(),
           updated_by: req.user?.id
         }
