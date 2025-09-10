@@ -24,8 +24,14 @@ router.get('/', asyncHandler(async (req, res) => {
     filters: []
   };
 
-  // Filter by active status - Note: material_indices table doesn't have is_active column
-  // This filter is handled in the fallback to parts table if needed
+  // Filter by active status  
+  if (active !== undefined) {
+    options.filters.push({
+      column: 'is_active',
+      operator: 'eq',
+      value: active === 'true'
+    });
+  }
 
   // Search filter
   if (search) {
@@ -36,26 +42,8 @@ router.get('/', asyncHandler(async (req, res) => {
     });
   }
 
-  // Check if materials table exists, fallback to parts
-  let result = await supabaseClient.getAll('material_indices', options);
-  
-  // If materials table doesn't exist, use parts table as fallback with different filters
-  if (!result.success && result.error?.includes('Could not find the table')) {
-    // Remove filters that don't exist in parts table
-    const partsOptions = {
-      ...options,
-      filters: options.filters?.filter(f => f.column !== 'is_active') || []
-    };
-    
-    // Change name search to description search for parts table
-    if (partsOptions.filters?.some(f => f.column === 'name')) {
-      partsOptions.filters = partsOptions.filters.map(f => 
-        f.column === 'name' ? { ...f, column: 'description' } : f
-      );
-    }
-    
-    result = await supabaseClient.getAll('parts', partsOptions);
-  }
+  // Get materials from the proper materials master table
+  let result = await supabaseClient.getAll('materials', options);
 
   if (!result.success) {
     return res.status(500).json(result);
@@ -83,12 +71,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 
   const options = { accessToken };
 
-  let result = await supabaseClient.getById('material_indices', id, options);
-  
-  // Fallback to parts table
-  if (!result.success && result.error?.includes('Could not find the table')) {
-    result = await supabaseClient.getById('parts', id, options);
-  }
+  let result = await supabaseClient.getById('materials', id, options);
 
   if (!result.success) {
     return res.status(404).json(result);
@@ -112,7 +95,7 @@ router.post('/', asyncHandler(async (req, res) => {
     updated_at: new Date().toISOString()
   };
 
-  const result = await supabaseClient.create('material_indices', materialData, { accessToken });
+  const result = await supabaseClient.create('materials', materialData, { accessToken });
 
   if (!result.success) {
     return res.status(400).json(result);
@@ -137,7 +120,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
     updated_at: new Date().toISOString()
   };
 
-  const result = await supabaseClient.update('material_indices', id, updateData, { accessToken });
+  const result = await supabaseClient.update('materials', id, updateData, { accessToken });
 
   if (!result.success) {
     return res.status(400).json(result);
@@ -157,9 +140,11 @@ router.delete('/:id', asyncHandler(async (req, res) => {
   const { id } = req.params;
   const accessToken = req.headers.authorization?.replace('Bearer ', '');
 
-  // Note: material_indices table doesn't support soft delete
-  // Using hard delete instead
-  const result = await supabaseClient.delete('material_indices', id, { accessToken });
+  // Soft delete by setting is_active = false
+  const result = await supabaseClient.update('materials', id, { 
+    is_active: false,
+    updated_at: new Date().toISOString()
+  }, { accessToken });
 
   if (!result.success) {
     return res.status(400).json(result);

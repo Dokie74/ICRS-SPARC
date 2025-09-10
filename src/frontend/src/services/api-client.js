@@ -430,6 +430,87 @@ class ApiClient {
     }
   };
 
+  // Materials API methods
+  materials = {
+    getAll: async (params = {}) => {
+      return this.get('/materials', params);
+    },
+
+    getById: async (id) => {
+      return this.get(`/materials/${id}`);
+    },
+
+    create: async (materialData) => {
+      return this.post('/materials', materialData);
+    },
+
+    update: async (id, materialData) => {
+      return this.put(`/materials/${id}`, materialData);
+    },
+
+    delete: async (id) => {
+      return this.delete(`/materials/${id}`);
+    },
+
+    search: async (query, params = {}) => {
+      return this.get('/materials/search', { q: query, ...params });
+    }
+  };
+
+  // Suppliers API methods
+  suppliers = {
+    getAll: async (params = {}) => {
+      return this.get('/suppliers', params);
+    },
+
+    getById: async (id) => {
+      return this.get(`/suppliers/${id}`);
+    },
+
+    create: async (supplierData) => {
+      return this.post('/suppliers', supplierData);
+    },
+
+    update: async (id, supplierData) => {
+      return this.put(`/suppliers/${id}`, supplierData);
+    },
+
+    delete: async (id) => {
+      return this.delete(`/suppliers/${id}`);
+    },
+
+    search: async (query, params = {}) => {
+      return this.get('/suppliers/search', { q: query, ...params });
+    }
+  };
+
+  // Storage Locations API methods  
+  locations = {
+    getAll: async (params = {}) => {
+      return this.get('/locations', params);
+    },
+
+    getById: async (id) => {
+      return this.get(`/locations/${id}`);
+    },
+
+    create: async (locationData) => {
+      return this.post('/locations', locationData);
+    },
+
+    update: async (id, locationData) => {
+      return this.put(`/locations/${id}`, locationData);
+    },
+
+    delete: async (id) => {
+      return this.delete(`/locations/${id}`);
+    },
+
+    search: async (query, params = {}) => {
+      return this.get('/locations/search', { q: query, ...params });
+    }
+  };
+
   // Dashboard API methods
   dashboard = {
     getStats: async () => {
@@ -474,4 +555,4 @@ apiClient.initialize();
 export default apiClient;
 
 // Export individual API groups for convenience
-export const { auth, inventory, parts, customers, preadmission, preshipments, dashboard, utils } = apiClient;
+export const { auth, inventory, parts, customers, materials, suppliers, locations, preadmission, preshipments, dashboard, utils } = apiClient;
