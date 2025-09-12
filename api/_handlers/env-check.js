@@ -26,6 +26,11 @@ module.exports = async function handler(req, res) {
         length: process.env.SUPABASE_ANON_KEY ? process.env.SUPABASE_ANON_KEY.length : 0,
         preview: process.env.SUPABASE_ANON_KEY ? process.env.SUPABASE_ANON_KEY.substring(0, 20) + '...' : 'NOT_SET'
       },
+      supabase_service_key: {
+        exists: !!process.env.SUPABASE_SERVICE_KEY,
+        length: process.env.SUPABASE_SERVICE_KEY ? process.env.SUPABASE_SERVICE_KEY.length : 0,
+        preview: process.env.SUPABASE_SERVICE_KEY ? process.env.SUPABASE_SERVICE_KEY.substring(0, 20) + '...' : 'NOT_SET'
+      },
       node_env: process.env.NODE_ENV || 'not_set',
       vercel_env: process.env.VERCEL_ENV || 'not_set',
       vercel_url: process.env.VERCEL_URL || 'not_set'

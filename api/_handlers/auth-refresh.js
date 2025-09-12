@@ -7,10 +7,10 @@ module.exports = async function handler(req, res) {
   setCorsHeaders(res, req.headers.origin);
   if (handleOptions(req, res)) return;
 
-  // Create Supabase client INSIDE handler where env vars are guaranteed to be available
+  // Create Supabase client with SERVICE ROLE key for authentication operations
   const supabase = createClient(
     process.env.SUPABASE_URL,
-    process.env.SUPABASE_ANON_KEY
+    process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY
   );
 
   if (req.method !== 'POST') {

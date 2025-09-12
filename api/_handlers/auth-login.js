@@ -7,16 +7,17 @@ module.exports = async function handler(req, res) {
   setCorsHeaders(res, req.headers.origin);
   if (handleOptions(req, res)) return;
 
-  // Create Supabase client INSIDE handler where env vars are guaranteed to be available
+  // Create Supabase client with SERVICE ROLE key for authentication operations
   const supabase = createClient(
     process.env.SUPABASE_URL,
-    process.env.SUPABASE_ANON_KEY
+    process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY
   );
 
   // Check environment variables
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+  if (!process.env.SUPABASE_URL || (!process.env.SUPABASE_SERVICE_KEY && !process.env.SUPABASE_ANON_KEY)) {
     console.error('Missing Supabase environment variables:', {
       url: !!process.env.SUPABASE_URL,
+      service_key: !!process.env.SUPABASE_SERVICE_KEY,
       anon_key: !!process.env.SUPABASE_ANON_KEY
     });
     return res.status(500).json({
@@ -24,7 +25,9 @@ module.exports = async function handler(req, res) {
       error: 'Authentication service misconfigured',
       debug: {
         supabase_url: !!process.env.SUPABASE_URL,
-        supabase_anon_key: !!process.env.SUPABASE_ANON_KEY
+        supabase_service_key: !!process.env.SUPABASE_SERVICE_KEY,
+        supabase_anon_key: !!process.env.SUPABASE_ANON_KEY,
+        using_service_key: !!process.env.SUPABASE_SERVICE_KEY
       }
     });
   }
@@ -32,7 +35,8 @@ module.exports = async function handler(req, res) {
   // Log Supabase configuration for debugging (first few chars only)
   console.log('Supabase config:', {
     url: process.env.SUPABASE_URL?.substring(0, 30) + '...',
-    anon_key: process.env.SUPABASE_ANON_KEY?.substring(0, 20) + '...'
+    using_service_key: !!process.env.SUPABASE_SERVICE_KEY,
+    key_preview: (process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY)?.substring(0, 20) + '...'
   });
 
   if (req.method !== 'POST') {
