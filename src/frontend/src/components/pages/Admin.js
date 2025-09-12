@@ -817,7 +817,10 @@ const Admin = () => {
                       {filteredParts.length === 0 && (
                         <tr>
                           <td colSpan="10" className="px-6 py-4 text-sm text-gray-500 text-center">
-                            {parts?.success && parts.data?.length > 0 ? 'No parts match your search criteria.' : 'No parts found. Upload parts using the batch upload below.'}
+                            {partsError ? 
+                              `Error loading parts: ${partsError.message || 'Authentication required'}. Please ensure you are logged in and have proper permissions.` :
+                              (parts?.success && parts.data?.length > 0 ? 'No parts match your search criteria.' : 'No parts found. Upload parts using the batch upload below.')
+                            }
                           </td>
                         </tr>
                       )}
