@@ -246,7 +246,7 @@ class CustomerService extends BaseService {
       // Get total lots for customer (preserves original statistics logic)
       const lotsResult = await DatabaseService.getAll('inventory_lots', {
         filters: [{ column: 'customer_id', value: customerId }],
-        select: 'id, status, current_quantity, total_value',
+        select: 'id, status, quantity, total_value',
         ...options
       });
 
@@ -257,8 +257,8 @@ class CustomerService extends BaseService {
       const lots = lotsResult.data;
       const stats = {
         total_lots: lots.length,
-        active_lots: lots.filter(lot => lot.current_quantity > 0).length,
-        total_quantity: lots.reduce((sum, lot) => sum + lot.current_quantity, 0),
+        active_lots: lots.filter(lot => lot.quantity > 0).length,
+        total_quantity: lots.reduce((sum, lot) => sum + lot.quantity, 0),
         total_value: lots.reduce((sum, lot) => sum + (lot.total_value || 0), 0),
         status_breakdown: {}
       };
@@ -311,7 +311,7 @@ class CustomerService extends BaseService {
       const result = await DatabaseService.getAll('inventory_lots', {
         filters: [
           { column: 'customer_id', value: customerId },
-          { column: 'current_quantity', operator: 'gt', value: 0 }
+          { column: 'quantity', operator: 'gt', value: 0 }
         ],
         select: 'id',
         limit: 1,
@@ -390,7 +390,7 @@ class CustomerService extends BaseService {
    */
   async getCustomerContacts(customerId, options = {}) {
     try {
-      const result = await DatabaseService.getAll('customer_contacts', {
+      const result = await DatabaseService.getAll('contacts', {
         filters: [{ column: 'customer_id', value: customerId }],
         orderBy: 'is_primary.desc', // Primary contact first
         ...options
@@ -423,7 +423,7 @@ class CustomerService extends BaseService {
         is_primary: contactData.is_primary || false
       };
 
-      const result = await DatabaseService.insert('customer_contacts', [sanitizedData], options);
+      const result = await DatabaseService.insert('contacts', [sanitizedData], options);
       
       // Handle result format (single record creation)
       if (result.success && result.data.length > 0) {
@@ -445,7 +445,7 @@ class CustomerService extends BaseService {
     try {
       // If this is set as primary, get customer_id and unset other primary contacts
       if (contactData.is_primary) {
-        const contactResult = await DatabaseService.getAll('customer_contacts', {
+        const contactResult = await DatabaseService.getAll('contacts', {
           filters: [{ column: 'id', value: contactId }],
           single: true,
           ...options
@@ -464,7 +464,7 @@ class CustomerService extends BaseService {
         is_primary: contactData.is_primary || false
       };
 
-      const result = await DatabaseService.update('customer_contacts', contactId, sanitizedData, options);
+      const result = await DatabaseService.update('contacts', contactId, sanitizedData, options);
       return result;
     } catch (error) {
       console.error('Error updating customer contact:', error);
@@ -478,7 +478,7 @@ class CustomerService extends BaseService {
    */
   async deleteCustomerContact(contactId, options = {}) {
     try {
-      const result = await DatabaseService.delete('customer_contacts', contactId, options);
+      const result = await DatabaseService.delete('contacts', contactId, options);
       return result;
     } catch (error) {
       console.error('Error deleting customer contact:', error);
@@ -512,7 +512,7 @@ class CustomerService extends BaseService {
   async setPrimaryContact(contactId, options = {}) {
     try {
       // Get the contact to find customer_id
-      const contactResult = await DatabaseService.getAll('customer_contacts', {
+      const contactResult = await DatabaseService.getAll('contacts', {
         filters: [{ column: 'id', value: contactId }],
         single: true,
         ...options
@@ -526,7 +526,7 @@ class CustomerService extends BaseService {
       await this.unsetPrimaryContact(contactResult.data.customer_id, contactId, options);
 
       // Set this contact as primary
-      const result = await DatabaseService.update('customer_contacts', contactId, { is_primary: true }, options);
+      const result = await DatabaseService.update('contacts', contactId, { is_primary: true }, options);
       return result;
     } catch (error) {
       console.error('Error setting primary contact:', error);

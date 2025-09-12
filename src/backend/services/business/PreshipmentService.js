@@ -13,7 +13,7 @@ class PreshipmentService extends BaseService {
   validatePreshipment(preshipmentData) {
     const errors = [];
     
-    if (!preshipmentData.shipmentId || preshipmentData.shipmentId.trim().length < 1) {
+    if (!preshipmentData.shipment_id || preshipmentData.shipment_id.trim().length < 1) {
       errors.push('Shipment ID is required');
     }
     
@@ -21,7 +21,7 @@ class PreshipmentService extends BaseService {
       errors.push('Shipment type is required');
     }
     
-    if (!preshipmentData.customerId) {
+    if (!preshipmentData.customer_id) {
       errors.push('Customer ID is required');
     }
     
@@ -72,7 +72,7 @@ class PreshipmentService extends BaseService {
   async getPreshipmentById(shipmentId, options = {}) {
     try {
       const result = await DatabaseService.getAll('preshipments', {
-        filters: [{ column: 'shipmentId', value: shipmentId }],
+        filters: [{ column: 'shipment_id', value: shipmentId }],
         single: true,
         ...options
       });
@@ -100,19 +100,18 @@ class PreshipmentService extends BaseService {
         };
       }
 
-      // Sanitize input data (preserves original sanitization pattern)
+      // Sanitize input data (updated to match actual schema)
       const sanitizedData = {
-        shipmentId: this.sanitizeInput(preshipmentData.shipmentId),
+        shipment_id: this.sanitizeInput(preshipmentData.shipment_id || preshipmentData.shipmentId),
         type: this.sanitizeInput(preshipmentData.type),
-        customerId: preshipmentData.customerId,
+        customer_id: preshipmentData.customer_id || preshipmentData.customerId,
         items: preshipmentData.items || [],
-        entryNumber: preshipmentData.entryNumber ? this.sanitizeInput(preshipmentData.entryNumber) : null,
+        entry_number: preshipmentData.entry_number || preshipmentData.entryNumber ? this.sanitizeInput(preshipmentData.entry_number || preshipmentData.entryNumber) : null,
         stage: preshipmentData.stage || 'Planning',
-        priority: preshipmentData.priority || 'Normal',
-        requested_ship_date: preshipmentData.requested_ship_date || null,
         carrier_name: preshipmentData.carrier_name ? this.sanitizeInput(preshipmentData.carrier_name) : null,
-        tracking_number: preshipmentData.tracking_number ? this.sanitizeInput(preshipmentData.tracking_number) : null,
-        notes: preshipmentData.notes ? this.sanitizeInput(preshipmentData.notes) : null
+        driver_name: preshipmentData.driver_name ? this.sanitizeInput(preshipmentData.driver_name) : null,
+        driver_license_number: preshipmentData.driver_license_number ? this.sanitizeInput(preshipmentData.driver_license_number) : null,
+        license_plate_number: preshipmentData.license_plate_number ? this.sanitizeInput(preshipmentData.license_plate_number) : null
       };
 
       const result = await DatabaseService.insert('preshipments', [sanitizedData], options);
@@ -128,7 +127,7 @@ class PreshipmentService extends BaseService {
       
       // Handle unique constraint violations (preserves exact FTZ compliance error messaging)
       if (error.message.includes('duplicate key') || error.message.includes('unique constraint')) {
-        return { success: false, error: `Shipment ID '${preshipmentData.shipmentId}' already exists` };
+        return { success: false, error: `Shipment ID '${preshipmentData.shipment_id || preshipmentData.shipmentId}' already exists` };
       }
       
       return { success: false, error: error.message };
@@ -142,7 +141,7 @@ class PreshipmentService extends BaseService {
   async updatePreshipmentStage(shipmentId, stage, options = {}) {
     try {
       const result = await DatabaseService.getAll('preshipments', {
-        filters: [{ column: 'shipmentId', value: shipmentId }],
+        filters: [{ column: 'shipment_id', value: shipmentId }],
         single: true,
         ...options
       });
@@ -153,8 +152,8 @@ class PreshipmentService extends BaseService {
 
       const preshipmentRecord = result.data;
       const updateResult = await DatabaseService.update('preshipments', preshipmentRecord.id, {
-        stage: stage,
-        updated_at: new Date().toISOString()
+        stage: stage
+        // Note: updated_at column doesn't exist in preshipments table
       }, options);
       
       return updateResult;
@@ -179,7 +178,7 @@ class PreshipmentService extends BaseService {
       }
 
       const result = await DatabaseService.getAll('preshipments', {
-        filters: [{ column: 'shipmentId', value: shipmentId }],
+        filters: [{ column: 'shipment_id', value: shipmentId }],
         single: true,
         ...options
       });
@@ -234,7 +233,7 @@ class PreshipmentService extends BaseService {
   async getPreshipmentsByCustomer(customerId, options = {}) {
     try {
       const result = await DatabaseService.getAll('preshipments', {
-        filters: [{ column: 'customerId', value: customerId }],
+        filters: [{ column: 'customer_id', value: customerId }],
         orderBy: 'created_at.desc',
         ...options
       });
@@ -281,8 +280,8 @@ class PreshipmentService extends BaseService {
         queryFilters.push({ column: 'type', value: filters.type });
       }
 
-      if (filters.customerId) {
-        queryFilters.push({ column: 'customerId', value: filters.customerId });
+      if (filters.customerId || filters.customer_id) {
+        queryFilters.push({ column: 'customer_id', value: filters.customerId || filters.customer_id });
       }
 
       const result = await DatabaseService.getAll('preshipments', {
@@ -294,9 +293,8 @@ class PreshipmentService extends BaseService {
       // Client-side filtering for search term (could be moved to database function)
       if (result.success && searchTerm) {
         const filteredData = result.data.filter(preshipment => 
-          preshipment.shipmentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          preshipment.entryNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          preshipment.tracking_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          preshipment.shipment_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          preshipment.entry_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           preshipment.carrier_name?.toLowerCase().includes(searchTerm.toLowerCase())
         );
         
@@ -389,7 +387,7 @@ class PreshipmentService extends BaseService {
   async updatePreshipmentItems(shipmentId, items, options = {}) {
     try {
       const result = await DatabaseService.getAll('preshipments', {
-        filters: [{ column: 'shipmentId', value: shipmentId }],
+        filters: [{ column: 'shipment_id', value: shipmentId }],
         single: true,
         ...options
       });
@@ -400,8 +398,8 @@ class PreshipmentService extends BaseService {
 
       const preshipmentRecord = result.data;
       const updateResult = await DatabaseService.update('preshipments', preshipmentRecord.id, {
-        items: items,
-        updated_at: new Date().toISOString()
+        items: items
+        // Note: updated_at column doesn't exist in preshipments table
       }, options);
       
       return updateResult;
@@ -463,8 +461,8 @@ class PreshipmentService extends BaseService {
         // Type breakdown
         stats.by_type[p.type] = (stats.by_type[p.type] || 0) + 1;
         
-        // Customer breakdown
-        stats.by_customer[p.customerId] = (stats.by_customer[p.customerId] || 0) + 1;
+        // Customer breakdown  
+        stats.by_customer[p.customer_id] = (stats.by_customer[p.customer_id] || 0) + 1;
         
         // Shipped count
         if (p.stage === 'Shipped') {

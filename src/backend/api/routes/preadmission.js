@@ -32,7 +32,7 @@ router.get('/', asyncHandler(async (req, res) => {
     const options = {
       select: `
         *,
-        customers:customerId(id, name, ein)
+        customers:customer_id(id, name, ein)
       `,
       orderBy: {
         column: orderBy,
@@ -48,7 +48,7 @@ router.get('/', asyncHandler(async (req, res) => {
     if (status) {
       filters.push({ column: 'status', value: status });
     }
-    if (customer_id) filters.push({ column: 'customerId', value: customer_id });
+    if (customer_id) filters.push({ column: 'customer_id', value: customer_id });
     if (container_number) {
       filters.push({ 
         column: 'container_number', 
@@ -71,7 +71,7 @@ router.get('/', asyncHandler(async (req, res) => {
 
     // Transform data to include calculated totals
     const transformedData = (result.data || []).map(pa => {
-      const lineItems = pa.preadmission_line_items || [];
+      const lineItems = pa.items || [];
       const totals = lineItems.reduce((acc, item) => {
         acc.total_quantity += item.quantity || 0;
         acc.total_value += item.total_value || 0;
@@ -120,7 +120,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
       {
         select: `
           *,
-          customers:customerId(id, name, ein, contact_email)
+          customers:customer_id(id, name, ein, contact_email)
         `,
         accessToken: req.accessToken
       },
@@ -140,7 +140,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 
     // Calculate totals and organize data
     const preadmission = result.data;
-    const lineItems = preadmission.preadmission_line_items || [];
+    const lineItems = preadmission.items || [];
     
     const totals = lineItems.reduce((acc, item) => {
       acc.total_quantity += item.quantity || 0;
@@ -285,33 +285,7 @@ router.delete('/:id', requireManager, asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   try {
-    // Check if preadmission has line items
-    const lineItemsCheck = await supabaseClient.getAll(
-      'preadmission_line_items',
-      {
-        filters: [{ column: 'preadmission_id', value: id }],
-        limit: 1,
-        accessToken: req.accessToken
-      },
-      false  // Use RLS
-    );
-
-    // Delete line items first if they exist
-    if (lineItemsCheck.success && lineItemsCheck.data.length > 0) {
-      const deleteLineItemsQuery = `
-        DELETE FROM preadmission_line_items 
-        WHERE preadmission_id = $1
-      `;
-      
-      await supabaseClient.callFunction(
-        'execute_sql',
-        { query: deleteLineItemsQuery, params: [id] },
-        { accessToken: req.accessToken },
-        false // Use RLS for delete operations
-      );
-    }
-
-    // Delete the preadmission
+    // Delete the preadmission (items are stored as JSONB, no separate line items table)
     const result = await supabaseClient.delete(
       'preadmissions',
       id,

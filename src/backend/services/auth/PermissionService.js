@@ -22,7 +22,7 @@ const AuthService = require('./AuthService');
  */
 class PermissionService extends BaseService {
   constructor() {
-    super('permissions');
+    super('user_permissions');
     
     // Cache for performance optimization
     this.permissionCache = new Map();

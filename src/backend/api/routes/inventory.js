@@ -184,8 +184,7 @@ router.post('/lots', requireStaff, asyncHandler(async (req, res) => {
     storage_location_id,
     initial_quantity,
     unit_value,
-    unit_of_measure,
-    expiration_date,
+    // NOTE: unit_of_measure and expiration_date fields don't exist in inventory_lots table
     notes
   } = req.body;
 
@@ -204,10 +203,9 @@ router.post('/lots', requireStaff, asyncHandler(async (req, res) => {
       quantity: initial_quantity,
       unit_value: unit_value || 0,
       total_value: (initial_quantity * (unit_value || 0)),
-      unit_of_measure,
-      expiration_date,
-      notes,
-      created_by: req.user.id
+      notes
+      // NOTE: created_by field doesn't exist in inventory_lots table
+      // NOTE: unit_of_measure and expiration_date fields don't exist in inventory_lots table
     };
 
     const result = await supabaseClient.create(
@@ -226,7 +224,7 @@ router.post('/lots', requireStaff, asyncHandler(async (req, res) => {
       lot_id: result.data.id,
       quantity: initial_quantity,
       type: 'receipt',
-      reference_number: 'INITIAL',
+      reference_id: 'INITIAL',
       notes: `Initial lot creation - ${new Date().toISOString()}`,
       created_by: req.user.id
     };
@@ -265,9 +263,9 @@ router.put('/lots/:id', requireStaff, asyncHandler(async (req, res) => {
   delete updateData.created_by;
   delete updateData.current_quantity; // Calculated field
 
-  // Add audit fields
+  // Add audit fields (only updated_at exists in inventory_lots table)
   updateData.updated_at = new Date().toISOString();
-  updateData.updated_by = req.user.id;
+  // NOTE: updated_by field doesn't exist in inventory_lots table
 
   try {
     const result = await supabaseClient.update(
@@ -290,19 +288,32 @@ router.put('/lots/:id', requireStaff, asyncHandler(async (req, res) => {
 
 /**
  * DELETE /api/inventory/lots/:id
- * Soft delete inventory lot (set active = false)
+ * Hard delete inventory lot (no is_active field for soft delete)
  */
 router.delete('/lots/:id', requireManager, asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   try {
-    const result = await supabaseClient.update(
+    // Check if lot has transactions before deleting
+    const transactionCheck = await supabaseClient.getAll(
+      'transactions',
+      {
+        filters: [{ column: 'lot_id', value: id }],
+        limit: 1,
+        accessToken: req.accessToken
+      }
+    );
+
+    if (transactionCheck.success && transactionCheck.data.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Cannot delete inventory lot with existing transactions'
+      });
+    }
+
+    const result = await supabaseClient.delete(
       'inventory_lots',
       id,
-      {
-        updated_at: new Date().toISOString(),
-        updated_by: req.user.id
-      },
       { accessToken: req.accessToken },
       false  // Use RLS
     );
@@ -380,7 +391,7 @@ router.post('/transactions', requireStaff, asyncHandler(async (req, res) => {
     lot_id,
     quantity,
     transaction_type,
-    reference_number,
+    reference_id,
     notes
   } = req.body;
 
@@ -396,7 +407,7 @@ router.post('/transactions', requireStaff, asyncHandler(async (req, res) => {
       lot_id,
       quantity: parseFloat(quantity),
       type: transaction_type,
-      reference_number,
+      reference_id,
       notes,
       created_by: req.user.id
     };

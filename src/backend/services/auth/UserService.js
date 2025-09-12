@@ -8,7 +8,7 @@ const AuthService = require('./AuthService');
 
 class UserService extends BaseService {
   constructor() {
-    super('users');
+    super('employees');
   }
 
   /**
@@ -356,7 +356,7 @@ class UserService extends BaseService {
    * Maintains real-time FTZ user updates
    */
   subscribeToUserChanges(callback, options = {}) {
-    return DatabaseService.subscribe('users', callback, options);
+    return DatabaseService.subscribe('employees', callback, options);
   }
 
   /**

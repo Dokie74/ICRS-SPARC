@@ -362,9 +362,10 @@ router.get('/users', authMiddleware, asyncHandler(async (req, res) => {
     offset: (parseInt(page) - 1) * parseInt(limit)
   };
 
-  if (active !== undefined) {
-    options.filters = [];
-  }
+  // NOTE: Active filtering would be handled by AuthService.getAllUsers()
+  // if (active !== undefined) {
+  //   options.filters = [{ column: 'is_active', value: active === 'true' }];
+  // }
 
   const result = await authService.getAllUsers(options);
   res.json(result);

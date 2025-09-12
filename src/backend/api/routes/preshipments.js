@@ -14,13 +14,13 @@ const router = express.Router();
 const mockPreshipments = [
   {
     id: '550e8400-e29b-41d4-a716-446655440001',
-    shipmentId: 'PS-2024-001',
+    shipment_id: 'PS-2024-001',
     type: '7501 Consumption Entry',
-    customerId: '550e8400-e29b-41d4-a716-446655440000',
+    customer_id: '550e8400-e29b-41d4-a716-446655440000',
     items: [
       { lot: 'L-12345', qty: 100, part_id: 'PART-001', description: 'Widget A', unit_value: 25.50, total_value: 2550.00, hts_code: '8421.23.0000', country_of_origin: 'CN' }
     ],
-    entryNumber: 'ENT-2024-001',
+    entry_number: 'ENT-2024-001',
     stage: 'Planning',
     entry_summary_status: 'NOT_PREPARED',
     filing_district_port: '1001',
@@ -35,13 +35,13 @@ const mockPreshipments = [
   },
   {
     id: '550e8400-e29b-41d4-a716-446655440002',
-    shipmentId: 'PS-2024-002',
+    shipment_id: 'PS-2024-002',
     type: '7512 T&E Export',
-    customerId: '550e8400-e29b-41d4-a716-446655440000',
+    customer_id: '550e8400-e29b-41d4-a716-446655440000',
     items: [
       { lot: 'L-12346', qty: 50, part_id: 'PART-002', description: 'Widget B', unit_value: 45.00, total_value: 2250.00, hts_code: '8421.23.0000', country_of_origin: 'US' }
     ],
-    entryNumber: 'ENT-2024-002',
+    entry_number: 'ENT-2024-002',
     stage: 'Shipped',
     entry_summary_status: 'ACCEPTED',
     driver_name: 'John Driver',
@@ -90,7 +90,7 @@ const checkInventoryAllocation = async (items, excludeShipmentId = null, accessT
     if (!item.part_id || !item.qty) continue;
     
     // Get current inventory for this part
-    const inventoryQuery = await supabaseClient.getAll('inventory', {
+    const inventoryQuery = await supabaseClient.getAll('inventory_lots', {
       filters: [{ column: 'part_id', value: item.part_id }],
       accessToken
     });
@@ -113,7 +113,7 @@ const checkInventoryAllocation = async (items, excludeShipmentId = null, accessT
     
     if (allocationQuery.success) {
       allocatedQty = allocationQuery.data
-        .filter(ps => excludeShipmentId ? ps.shipmentId !== excludeShipmentId : true)
+        .filter(ps => excludeShipmentId ? ps.shipment_id !== excludeShipmentId : true)
         .reduce((sum, ps) => {
           const shipmentItems = ps.items || [];
           const partAllocation = shipmentItems
@@ -163,7 +163,7 @@ router.get('/', asyncHandler(async (req, res) => {
     const options = {
       select: `
         *,
-        customers:customerId(id, name, ein)
+        customers:customer_id(id, name, ein)
       `,
       orderBy: {
         column: orderBy,
@@ -178,18 +178,18 @@ router.get('/', asyncHandler(async (req, res) => {
     const filters = [];
     if (stage) filters.push({ column: 'stage', value: stage });
     if (type) filters.push({ column: 'type', value: type });
-    if (customer_id) filters.push({ column: 'customerId', value: customer_id });
+    if (customer_id) filters.push({ column: 'customer_id', value: customer_id });
     if (entry_summary_status) filters.push({ column: 'entry_summary_status', value: entry_summary_status });
     if (shipment_id) {
       filters.push({ 
-        column: 'shipmentId', 
+        column: 'shipment_id', 
         value: `%${shipment_id}%`, 
         operator: 'ilike' 
       });
     }
     if (entry_number) {
       filters.push({ 
-        column: 'entryNumber', 
+        column: 'entry_number', 
         value: `%${entry_number}%`, 
         operator: 'ilike' 
       });
@@ -262,7 +262,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
       {
         select: `
           *,
-          customers:customerId(id, name, ein, contact_email)
+          customers:customer_id(id, name, ein, contact_email)
         `,
         accessToken: accessToken
       }
@@ -395,7 +395,7 @@ router.post('/', requireStaff, asyncHandler(async (req, res) => {
     const existingShipment = await supabaseClient.getAll(
       'preshipments',
       {
-        filters: [{ column: 'shipmentId', value: shipmentId }],
+        filters: [{ column: 'shipment_id', value: shipmentId }],
         limit: 1,
         accessToken: req.accessToken
       }
@@ -431,11 +431,11 @@ router.post('/', requireStaff, asyncHandler(async (req, res) => {
     }, { total_value: 0, total_quantity: 0 });
 
     const preshipmentData = {
-      shipmentId: validation.sanitizeInput(shipmentId),
+      shipment_id: validation.sanitizeInput(shipmentId),
       type,
-      customerId,
+      customer_id: customerId,
       items,
-      entryNumber: entryNumber ? validation.sanitizeInput(entryNumber) : null,
+      entry_number: entryNumber ? validation.sanitizeInput(entryNumber) : null,
       stage,
       
       // ACE Entry Summary fields
@@ -509,7 +509,7 @@ router.put('/:id', requireStaff, asyncHandler(async (req, res) => {
   delete updateData.id;
   delete updateData.created_at;
   delete updateData.created_by;
-  delete updateData.shipmentId; // Prevent shipment ID changes
+  delete updateData.shipment_id; // Prevent shipment ID changes
 
   // Validate ACE fields if provided
   if (updateData.filing_district_port || updateData.entry_filer_code || updateData.carrier_code) {
@@ -546,7 +546,7 @@ router.put('/:id', requireStaff, asyncHandler(async (req, res) => {
   }
 
   // Sanitize string inputs
-  ['entryNumber', 'filing_district_port', 'entry_filer_code', 'carrier_code', 'notes', 
+  ['entry_number', 'filing_district_port', 'entry_filer_code', 'carrier_code', 'notes', 
    'compliance_notes', 'carrier_name', 'tracking_number'].forEach(field => {
     if (updateData[field]) {
       updateData[field] = validation.sanitizeInput(updateData[field]);

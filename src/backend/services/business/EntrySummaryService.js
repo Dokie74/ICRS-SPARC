@@ -237,7 +237,7 @@ class EntrySummaryService extends BaseService {
           unit_of_measure_code_1: 'PCS' // Default to pieces
         };
 
-        const lineItemResult = await DatabaseService.insert('entry_line_items', [lineItemData], options);
+        const lineItemResult = await DatabaseService.insert('entry_summary_line_items', [lineItemData], options);
         if (lineItemResult.success) {
           lineItems.push(lineItemResult.data[0]);
           
@@ -280,7 +280,7 @@ class EntrySummaryService extends BaseService {
   async calculateAndCreateGrandTotals(entrySummaryId, options = {}) {
     try {
       // Get all line items for this entry
-      const lineItemsResult = await DatabaseService.getAll('entry_line_items', {
+      const lineItemsResult = await DatabaseService.getAll('entry_summary_line_items', {
         filters: [{ column: 'entry_summary_id', value: entrySummaryId }],
         ...options
       });
@@ -370,7 +370,7 @@ class EntrySummaryService extends BaseService {
       const entry = entryResult.data;
 
       // Get line items
-      const lineItemsResult = await DatabaseService.getAll('entry_line_items', {
+      const lineItemsResult = await DatabaseService.getAll('entry_summary_line_items', {
         filters: [{ column: 'entry_summary_id', value: entrySummaryId }],
         orderBy: 'line_item_number.asc',
         ...options
@@ -398,11 +398,9 @@ class EntrySummaryService extends BaseService {
         ...options
       });
 
-      // Get PGA data if any
-      const pgaResult = await DatabaseService.getAll('pga_data', {
-        filters: [{ column: 'entry_summary_id', value: entrySummaryId }],
-        ...options
-      });
+      // Note: pga_data table does not exist in current schema
+      // PGA data would need to be stored in entry_summaries table or separate table if created
+      console.warn('pga_data table not found - returning empty PGA data');
 
       return {
         success: true,
@@ -410,7 +408,8 @@ class EntrySummaryService extends BaseService {
           ...entry,
           line_items: lineItemsWithFTZ,
           grand_totals: grandTotalsResult.success ? grandTotalsResult.data : null,
-          pga_data: pgaResult.success ? pgaResult.data : []
+          pga_data: [], // Empty since table doesn't exist
+          warning: 'pga_data table does not exist'
         }
       };
     } catch (error) {

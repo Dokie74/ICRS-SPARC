@@ -691,7 +691,7 @@ class AuthService extends EnhancedBaseService {
    */
   async deactivateUser(userId, options = {}) {
     try {
-      const result = await supabaseClient.update('employees', userId, { active: false }, options);
+      const result = await supabaseClient.update('employees', userId, { is_active: false }, options);
       return result;
     } catch (error) {
       console.error('Error deactivating user:', error);
@@ -704,7 +704,7 @@ class AuthService extends EnhancedBaseService {
    */
   async reactivateUser(userId, options = {}) {
     try {
-      const result = await supabaseClient.update('employees', userId, { active: true }, options);
+      const result = await supabaseClient.update('employees', userId, { is_active: true }, options);
       return result;
     } catch (error) {
       console.error('Error reactivating user:', error);

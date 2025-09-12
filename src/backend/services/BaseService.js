@@ -126,7 +126,7 @@ class BaseService {
       }
       
       const updateData = {
-        active: false,
+        is_active: false,
         updated_at: new Date().toISOString()
       };
       

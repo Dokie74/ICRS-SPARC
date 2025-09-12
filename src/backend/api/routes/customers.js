@@ -39,7 +39,8 @@ router.get('/', asyncHandler(async (req, res) => {
 
     // Add filters
     const filters = [];
-    if (country) filters.push({ column: 'country', value: country });
+    // NOTE: 'country' column doesn't exist in customers table
+    // if (country) filters.push({ column: 'country', value: country });
 
     // Handle search functionality
     if (search) {
@@ -162,48 +163,48 @@ router.post('/', requireStaff, asyncHandler(async (req, res) => {
     customs_broker,
     notes
   } = req.body;
+  
+  // NOTE: Mapping frontend fields to database columns
+  // code -> ein, contact_person -> not in DB, email -> contact_email
+  // city/state/postal_code/country -> not in DB, tax_id -> ein, customs_broker -> broker_name
 
-  if (!name || !code) {
+  if (!name) {
     return res.status(400).json({
       success: false,
-      error: 'Missing required fields: name, code'
+      error: 'Missing required field: name'
     });
   }
 
   try {
-    // Check if customer code already exists
-    const existingCustomer = await supabaseClient.getAll(
-      'customers',
-      {
-        filters: [{ column: 'code', value: code }],
-        limit: 1,
-        accessToken: req.accessToken
-      },
-      false  // Use RLS
-    );
+    // Check if customer EIN already exists (code maps to ein)
+    if (code) {
+      const existingCustomer = await supabaseClient.getAll(
+        'customers',
+        {
+          filters: [{ column: 'ein', value: code }],
+          limit: 1,
+          accessToken: req.accessToken
+        },
+        false  // Use RLS
+      );
 
-    if (existingCustomer.success && existingCustomer.data.length > 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'Customer code already exists'
-      });
+      if (existingCustomer.success && existingCustomer.data.length > 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Customer EIN already exists'
+        });
+      }
     }
 
     const customerData = {
       name,
-      code,
-      contact_person,
-      email,
+      ein: code || tax_id,  // Map code or tax_id to ein
+      contact_email: email,  // Map email to contact_email
       phone,
       address,
-      city,
-      state,
-      postal_code,
-      country,
-      tax_id,
-      customs_broker,
-      notes,
-      created_by: req.user.id
+      broker_name: customs_broker,  // Map customs_broker to broker_name
+      notes
+      // NOTE: contact_person, city, state, postal_code, country, created_by fields don't exist in customers table
     };
 
     const result = await supabaseClient.create(
@@ -236,13 +237,30 @@ router.put('/:id', requireStaff, asyncHandler(async (req, res) => {
   delete updateData.created_at;
   delete updateData.created_by;
 
-  // Check if code is being changed and ensure uniqueness
-  if (updateData.code) {
+  // Map frontend fields to database columns for update
+  if (updateData.code) updateData.ein = updateData.code;
+  if (updateData.email) updateData.contact_email = updateData.email;
+  if (updateData.tax_id) updateData.ein = updateData.tax_id;
+  if (updateData.customs_broker) updateData.broker_name = updateData.customs_broker;
+  
+  // Remove fields that don't exist in database
+  delete updateData.code;
+  delete updateData.contact_person;
+  delete updateData.email;
+  delete updateData.city;
+  delete updateData.state;
+  delete updateData.postal_code;
+  delete updateData.country;
+  delete updateData.tax_id;
+  delete updateData.customs_broker;
+
+  // Check if EIN is being changed and ensure uniqueness
+  if (updateData.ein) {
     const existingCustomer = await supabaseClient.getAll(
       'customers',
       {
         filters: [
-          { column: 'code', value: updateData.code },
+          { column: 'ein', value: updateData.ein },
           { column: 'id', value: id, operator: 'neq' }
         ],
         limit: 1,
@@ -254,14 +272,14 @@ router.put('/:id', requireStaff, asyncHandler(async (req, res) => {
     if (existingCustomer.success && existingCustomer.data.length > 0) {
       return res.status(400).json({
         success: false,
-        error: 'Customer code already exists'
+        error: 'Customer EIN already exists'
       });
     }
   }
 
-  // Add audit fields
+  // Add audit fields (only updated_at exists in customers table)
   updateData.updated_at = new Date().toISOString();
-  updateData.updated_by = req.user.id;
+  // NOTE: updated_by field doesn't exist in customers table
 
   try {
     const result = await supabaseClient.update(
@@ -284,7 +302,7 @@ router.put('/:id', requireStaff, asyncHandler(async (req, res) => {
 
 /**
  * DELETE /api/customers/:id
- * Soft delete customer
+ * Update customer status (no is_active field, using status instead)
  */
 router.delete('/:id', requireManager, asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -310,12 +328,14 @@ router.delete('/:id', requireManager, asyncHandler(async (req, res) => {
       });
     }
 
+    // Set status to inactive instead of hard delete (no is_active field)
     const result = await supabaseClient.update(
       'customers',
       id,
       {
-        updated_at: new Date().toISOString(),
-        updated_by: req.user.id
+        status: 'inactive',
+        updated_at: new Date().toISOString()
+        // NOTE: updated_by field doesn't exist in customers table
       },
       { accessToken: req.accessToken },
       false  // Use RLS

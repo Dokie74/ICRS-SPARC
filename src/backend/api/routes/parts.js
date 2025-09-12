@@ -90,8 +90,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
       {
         select: `
           *,
-          inventory_lots:part_id(id, current_quantity),
-          part_variants:part_id(id, variant_name, variant_value)
+          inventory_lots:part_id(id, quantity)
         `,
         accessToken: req.accessToken
       },
@@ -186,9 +185,7 @@ router.put('/:id', requireStaff, asyncHandler(async (req, res) => {
   delete updateData.created_at;
   delete updateData.created_by;
 
-  // Add audit fields
-  updateData.updated_at = new Date().toISOString();
-  updateData.updated_by = req.user.id;
+  // NOTE: parts table doesn't have audit fields (updated_at, updated_by) in current schema
 
   try {
     const result = await supabaseClient.update(
@@ -211,7 +208,7 @@ router.put('/:id', requireStaff, asyncHandler(async (req, res) => {
 
 /**
  * DELETE /api/parts/:id
- * Soft delete part
+ * Hard delete part (parts table has no is_active field for soft delete)
  */
 router.delete('/:id', requireManager, asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -237,13 +234,10 @@ router.delete('/:id', requireManager, asyncHandler(async (req, res) => {
       });
     }
 
-    const result = await supabaseClient.update(
+    // Hard delete since parts table has no is_active field
+    const result = await supabaseClient.delete(
       'parts',
       id,
-      {
-        updated_at: new Date().toISOString(),
-        updated_by: req.user.id
-      },
       { accessToken: req.accessToken },
       true  // Force admin client
     );
@@ -265,14 +259,14 @@ router.delete('/:id', requireManager, asyncHandler(async (req, res) => {
 router.get('/reference/materials', asyncHandler(async (req, res) => {
   try {
     // Get distinct materials from parts table
-    const result = await supabaseClient.callFunction(
-      'get_distinct_materials',
-      {},
-      { accessToken: req.accessToken }
-    );
+    const result = await supabaseClient.getAll('parts', {
+      select: 'material',
+      filters: [{ column: 'material', operator: 'neq', value: null }],
+      accessToken: req.accessToken
+    });
 
     if (!result.success) {
-      // Fallback to hardcoded list if function doesn't exist
+      // Fallback to hardcoded list if query fails
       const materials = [
         'aluminum', 'steel', 'stainless_steel', 'copper', 'brass', 'iron',
         'plastic', 'rubber', 'glass', 'ceramic', 'composite', 'other'
@@ -284,7 +278,16 @@ router.get('/reference/materials', asyncHandler(async (req, res) => {
       });
     }
 
-    res.json(result);
+    // Get distinct materials from query results
+    const distinctMaterials = [...new Set(result.data
+      .map(p => p.material)
+      .filter(material => material && material.trim())
+    )].sort();
+
+    res.json({
+      success: true,
+      data: distinctMaterials.map(material => ({ material }))
+    });
   } catch (error) {
     console.error('Get materials error:', error);
     res.status(500).json({

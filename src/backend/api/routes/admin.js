@@ -293,9 +293,10 @@ router.get('/customers-master', asyncHandler(async (req, res) => {
     // Build filters for customers table
     const filters = [];
     
-    if (type) {
-      filters.push({ column: 'type', value: type });
-    }
+    // NOTE: 'type' column doesn't exist in customers table
+    // if (type) {
+    //   filters.push({ column: 'type', value: type });
+    // }
     
     if (search) {
       // Search across customer name and contact fields
@@ -391,7 +392,7 @@ router.get('/suppliers', asyncHandler(async (req, res) => {
     const filters = [];
     
     if (type) {
-      filters.push({ column: 'type', value: type });
+      filters.push({ column: 'supplier_type', value: type });  // Use supplier_type not type
     }
     
     if (search) {
@@ -440,31 +441,31 @@ router.get('/suppliers', asyncHandler(async (req, res) => {
 // POST /api/admin/suppliers - Create new supplier
 router.post('/suppliers', asyncHandler(async (req, res) => {
   // Handle field mapping for frontend/backend compatibility
-  const name = req.body.name || req.body.name;
-  const email = req.body.email || req.body.contact_email;
+  const name = req.body.name;
+  const contact_email = req.body.email || req.body.contact_email; // Map email to contact_email
   const contact_person = req.body.contact_person;
   
   const { phone, type, country, address } = req.body;
   
   // Validation
-  if (!name || !contact_person || !email) {
+  if (!name || !contact_person || !contact_email) {
     return res.status(400).json({
       success: false,
-      error: 'Missing required fields: name, contact_person, email'
+      error: 'Missing required fields: name, contact_person, contact_email'
     });
   }
   
   try {
-    // Prepare supplier data
+    // Prepare supplier data (map to actual database columns)
     const supplierData = {
       name,
       contact_person,
-      email,
+      contact_email,  // Use contact_email not email
       phone: phone || '',
-      type: type || 'general',
-      status: 'active',
+      supplier_type: type || 'general',  // Use supplier_type not type
       country: country || 'USA',
       address: address || ''
+      // NOTE: status field doesn't exist in suppliers table
     };
 
     const result = await supabaseClient.create(
@@ -497,22 +498,23 @@ router.put('/suppliers/:id', asyncHandler(async (req, res) => {
   
   try {
     // Handle field mapping for frontend/backend compatibility
-    const name = req.body.name || req.body.name;
-    const email = req.body.email || req.body.contact_email;
+    const name = req.body.name;
+    const contact_email = req.body.email || req.body.contact_email;  // Map email to contact_email
     const contact_person = req.body.contact_person;
     
     const { phone, type, country, address, status } = req.body;
     
-    // Prepare update data (only include fields that are provided)
+    // Prepare update data (only include fields that are provided, map to database columns)
     const updateData = {};
     if (name !== undefined) updateData.name = name;
     if (contact_person !== undefined) updateData.contact_person = contact_person;
-    if (email !== undefined) updateData.email = email;
+    if (contact_email !== undefined) updateData.contact_email = contact_email;  // Use contact_email not email
     if (phone !== undefined) updateData.phone = phone;
-    if (type !== undefined) updateData.type = type;
+    if (type !== undefined) updateData.supplier_type = type;  // Use supplier_type not type
     if (country !== undefined) updateData.country = country;
     if (address !== undefined) updateData.address = address;
-    if (status !== undefined) updateData.status = status;
+    // NOTE: status field doesn't exist in suppliers table
+    // if (status !== undefined) updateData.status = status;
     
     const result = await supabaseClient.update(
       'suppliers',
@@ -594,11 +596,10 @@ router.get('/storage-locations', asyncHandler(async (req, res) => {
       filters.push({ column: 'zone', value: zone });
     }
     
-    if (type && type !== 'all' && type !== '') {
-      // Note: type field may not exist in current schema
-      // Keep for UI compatibility but may not filter anything
-      filters.push({ column: 'type', value: type });
-    }
+    // NOTE: 'type' column doesn't exist in storage_locations table
+    // if (type && type !== 'all' && type !== '') {
+    //   filters.push({ column: 'type', value: type });
+    // }
     
     if (search && search !== '') {
       // Search in location_code or description

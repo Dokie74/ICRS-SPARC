@@ -226,11 +226,20 @@ router.get('/alerts', asyncHandler(async (req, res) => {
     const alerts = [];
     
     // Check for low inventory
-    const lowInventoryResult = await supabaseClient.callFunction(
-      'get_low_inventory_alerts',
-      { threshold: 10 },
-      { accessToken: req.accessToken }
-    );
+    const lowInventoryResult = await supabaseClient.getAll('inventory_lots', {
+      select: `
+        id,
+        quantity,
+        parts!inner (
+          id,
+          description
+        )
+      `,
+      filters: [
+        { column: 'quantity', operator: 'lt', value: 10 },
+        { column: 'status', operator: 'neq', value: 'voided' }
+      ]
+    }, { accessToken: req.accessToken });
     
     if (lowInventoryResult.success && lowInventoryResult.data) {
       lowInventoryResult.data.forEach(item => {
@@ -238,8 +247,12 @@ router.get('/alerts', asyncHandler(async (req, res) => {
           type: 'warning',
           category: 'inventory',
           title: 'Low Inventory',
-          message: `${item.part_description} is running low (${item.current_quantity} remaining)`,
-          data: item,
+          message: `${item.parts.description} is running low (${item.quantity} remaining)`,
+          data: {
+            ...item,
+            part_description: item.parts.description,
+            current_quantity: item.quantity
+          },
           created_at: new Date().toISOString()
         });
       });
@@ -272,7 +285,9 @@ router.get('/alerts', asyncHandler(async (req, res) => {
       });
     }
 
-    // Check for expiring lots
+    // TODO: Check for expiring lots - expiration_date column doesn't exist in inventory_lots table
+    // Uncomment when expiration_date column is added to inventory_lots table
+    /*
     const expiringDate = new Date();
     expiringDate.setDate(expiringDate.getDate() + 30);
     
@@ -280,8 +295,7 @@ router.get('/alerts', asyncHandler(async (req, res) => {
       'inventory_lots',
       {
         filters: [
-          { column: 'expiration_date', value: expiringDate.toISOString(), operator: 'lte' },
-          
+          { column: 'expiration_date', value: expiringDate.toISOString(), operator: 'lte' }
         ],
         select: 'id, expiration_date, parts:part_id(description)',
         accessToken: req.accessToken
@@ -301,6 +315,7 @@ router.get('/alerts', asyncHandler(async (req, res) => {
         });
       });
     }
+    */
 
     res.json({
       success: true,

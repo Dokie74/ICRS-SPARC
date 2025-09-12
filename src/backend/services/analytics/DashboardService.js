@@ -7,7 +7,7 @@ const DatabaseService = require('../../db/supabase-client');
 
 class DashboardService extends BaseService {
   constructor() {
-    super('dashboard_metrics');
+    super('dashboard_analytics');
     // Store current inventory for fallback calculations (preserves original pattern)
     this.currentInventory = null;
   }
@@ -167,11 +167,10 @@ class DashboardService extends BaseService {
       const result = await DatabaseService.getAll('preadmissions', {
         select: `
           id,
-          "admissionId",
+          "admission_id",
           status,
-          container,
+          container_number,
           arrival_date,
-          estimated_value,
           customer_id,
           created_at,
           customers (
@@ -223,10 +222,8 @@ class DashboardService extends BaseService {
       const result = await DatabaseService.getAll('preshipments', {
         select: `
           id,
-          "shipmentId",
+          "shipment_id",
           status,
-          ship_date,
-          estimated_value,
           customer_id,
           created_at,
           customers (
@@ -352,7 +349,7 @@ class DashboardService extends BaseService {
       threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
 
       const overdueAuditsResult = await DatabaseService.getAll('preadmissions', {
-        select: 'id, "admissionId", arrival_date',
+        select: 'id, "admission_id", arrival_date',
         filters: [
           { column: 'status', value: 'Arrived - Pending Audit' },
           { column: 'arrival_date', operator: 'lt', value: threeDaysAgo.toISOString() }
@@ -506,7 +503,7 @@ class DashboardService extends BaseService {
         const lotsResult = await DatabaseService.getAll('inventory_lots', {
           select: `
             id,
-            current_quantity,
+            quantity,
             created_at,
             parts!inner (
               standard_value,
@@ -515,7 +512,7 @@ class DashboardService extends BaseService {
           `,
           filters: [
             { column: 'created_at', operator: 'lte', value: date.toISOString() },
-            { column: 'voided', value: false }
+            { column: 'status', operator: 'neq', value: 'voided' }
           ],
           ...options
         });
@@ -529,7 +526,7 @@ class DashboardService extends BaseService {
         const lotsUpToDate = lotsResult.data;
         const totalLots = lotsUpToDate?.length || 0;
         const totalValue = lotsUpToDate?.reduce((acc, lot) => {
-          return acc + (lot.current_quantity * (lot.parts?.standard_value || 0));
+          return acc + (lot.quantity * (lot.parts?.standard_value || 0));
         }, 0) || 0;
 
         last7Days.push({
@@ -556,9 +553,9 @@ class DashboardService extends BaseService {
       const result = await DatabaseService.getAll('transactions', {
         select: `
           id,
-          transaction_date,
+          created_at,
           quantity,
-          transaction_type,
+          type,
           lot_id,
           inventory_lots!inner (
             parts!inner (
@@ -566,7 +563,7 @@ class DashboardService extends BaseService {
             )
           )
         `,
-        orderBy: 'transaction_date.asc',
+        orderBy: 'created_at.asc',
         limit: 100,
         ...options
       });
@@ -583,14 +580,14 @@ class DashboardService extends BaseService {
       let runningValue = 0;
 
       transactions.forEach(txn => {
-        const date = new Date(txn.transaction_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const date = new Date(txn.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         const quantity = txn.quantity || 0;
         const unitValue = txn.inventory_lots?.parts?.standard_value || 0;
 
-        if (txn.transaction_type === 'received') {
+        if (txn.type === 'received') {
           runningQuantity += quantity;
           runningValue += quantity * unitValue;
-        } else if (txn.transaction_type === 'shipped') {
+        } else if (txn.type === 'shipped') {
           runningQuantity -= quantity;
           runningValue -= quantity * unitValue;
         }
@@ -630,14 +627,14 @@ class DashboardService extends BaseService {
     try {
       const result = await DatabaseService.getAll('inventory_lots', {
         select: `
-          current_quantity,
+          quantity,
           parts!inner (
             material,
             standard_value,
             material_weight
           )
         `,
-        filters: [{ column: 'voided', value: false }],
+        filters: [{ column: 'status', operator: 'neq', value: 'voided' }],
         ...options
       });
 
@@ -652,9 +649,9 @@ class DashboardService extends BaseService {
         if (!acc[material]) {
           acc[material] = { quantity: 0, value: 0, weight: 0 };
         }
-        acc[material].quantity += lot.current_quantity || 0;
-        acc[material].value += (lot.current_quantity || 0) * (lot.parts?.standard_value || 0);
-        acc[material].weight += (lot.current_quantity || 0) * (lot.parts?.material_weight || 0);
+        acc[material].quantity += lot.quantity || 0;
+        acc[material].value += (lot.quantity || 0) * (lot.parts?.standard_value || 0);
+        acc[material].weight += (lot.quantity || 0) * (lot.parts?.material_weight || 0);
         return acc;
       }, {}) || {};
 
