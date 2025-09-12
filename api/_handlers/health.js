@@ -26,7 +26,7 @@ module.exports = async function handler(req, res) {
     const { createClient } = require('@supabase/supabase-js');
     if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
       const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
-      await supabase.from('customers').select('count(*)', { count: 'exact', head: true });
+      await supabase.from('customers').select('id', { count: 'exact', head: true }); // Fixed: select column not count(*)
       healthCheck.data.database = { status: 'connected' };
     } else {
       healthCheck.data.database = { status: 'not_configured' };

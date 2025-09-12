@@ -37,25 +37,22 @@ async function examineTableSchema(tableName) {
 async function getTableList() {
   console.log('\n=== LISTING ALL TABLES ===');
   try {
-    // Use rpc to get table list
-    const { data, error } = await supabase
-      .rpc('get_table_list');
+    // Note: get_table_list RPC function doesn't exist by default
+    console.log('⚠️  get_table_list RPC function does not exist in Supabase by default');
     
-    if (error) {
-      console.log('Could not get table list via RPC, trying direct SQL');
-      // Try a direct SQL query approach
-      const { data: sqlData, error: sqlError } = await supabase
-        .from('pg_tables')
-        .select('tablename')
-        .eq('schemaname', 'public');
+    // Try querying information_schema instead
+    const { data: sqlData, error: sqlError } = await supabase
+      .from('information_schema.tables')
+      .select('table_name')
+      .eq('table_schema', 'public');
+    
+    if (sqlError) {
+      console.log('Could not get table list from information_schema either:', sqlError.message);
       
-      if (sqlError) {
-        console.log('Could not get table list via pg_tables either');
-      } else {
-        console.log('Available tables:', sqlData?.map(t => t.tablename).join(', '));
-      }
+      // Fallback: try known tables individually
+      console.log('Trying known tables individually...');
     } else {
-      console.log('Available tables:', data);
+      console.log('Available tables:', sqlData?.map(t => t.table_name).join(', ') || 'None found');
     }
   } catch (err) {
     console.log('Exception getting table list:', err.message);

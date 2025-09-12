@@ -100,8 +100,8 @@ const AddPreadmissionModal = ({
     setLoading(true);
     try {
       const [customersRes, partsRes] = await Promise.all([
-        apiClient.customers.getAll({ limit: 1000, active: true }),
-        apiClient.parts.getAll({ limit: 1000, active: true })
+        apiClient.customers.getAll({ limit: 1000 }),
+        apiClient.parts.getAll({ limit: 1000 })
       ]);
 
       // For now, we'll use empty arrays for suppliers and locations

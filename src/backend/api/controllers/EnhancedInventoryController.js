@@ -603,7 +603,7 @@ class EnhancedInventoryController {
 
   validateCreateLotRequest(data) {
     const errors = [];
-    const requiredFields = ['part_id', 'customer_id', 'original_quantity'];
+    const requiredFields = ['part_id', 'customer_id', 'quantity'];
     
     requiredFields.forEach(field => {
       if (!data[field]) {
@@ -614,10 +614,10 @@ class EnhancedInventoryController {
       }
     });
     
-    if (data.original_quantity && (isNaN(parseInt(data.original_quantity)) || parseInt(data.original_quantity) <= 0)) {
+    if (data.quantity && (isNaN(parseInt(data.quantity)) || parseInt(data.quantity) <= 0)) {
       errors.push({
-        field: 'original_quantity',
-        message: 'Original quantity must be a positive number'
+        field: 'quantity',
+        message: 'Quantity must be a positive number'
       });
     }
     

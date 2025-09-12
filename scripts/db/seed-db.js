@@ -224,18 +224,20 @@ async function seedDatabase(clearFirst = false) {
         // Clear tables if requested
         if (clearFirst) {
             console.log('\n🧹 Clearing existing data...');
-            await clearTable('inventory');
+            // Note: Fixed table names to match actual database schema
+            await clearTable('inventory_lots'); // was 'inventory' 
             await clearTable('parts');
-            await clearTable('locations');
+            await clearTable('storage_locations'); // was 'locations'
             await clearTable('customers');
         }
 
         // Seed tables in dependency order
         console.log('\n🌱 Seeding tables...');
+        // Note: Fixed table names to match actual database schema
         await seedTable('customers', sampleData.customers);
-        await seedTable('locations', sampleData.locations);
+        await seedTable('storage_locations', sampleData.locations); // was 'locations'
         await seedTable('parts', sampleData.parts);
-        await seedTable('inventory', sampleData.inventory);
+        await seedTable('inventory_lots', sampleData.inventory); // was 'inventory'
 
         console.log('\n🎉 Database seeding completed successfully!');
         console.log('================================');

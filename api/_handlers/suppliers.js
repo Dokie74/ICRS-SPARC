@@ -16,7 +16,7 @@ async function handler(req, res) {
       const { search, limit, offset } = req.query;
       
       let options = {
-        select: 'id, supplier_code, name, contact_person, email, phone, country, created_at, updated_at',
+        select: 'id, name, contact_person, contact_email, phone, country, created_at, updated_at, address, supplier_type, ein', // Removed supplier_code (doesn't exist), changed email → contact_email
         limit: limit ? parseInt(limit) : 50,
         offset: offset ? parseInt(offset) : 0
       };

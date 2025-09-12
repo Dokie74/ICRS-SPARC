@@ -20,8 +20,8 @@ async function handler(req, res) {
     
     // Get basic counts for dashboard
     const [inventoryResult, preadmissionsResult, customersResult] = await Promise.allSettled([
-      supabaseClient.getAll('inventory_lots', { select: 'quantity, estimated_value' }),
-      supabaseClient.getAll('preadmissions', { select: 'status' }),
+      supabaseClient.getAll('inventory_lots', { select: 'quantity, total_value' }), // estimated_value → total_value
+      supabaseClient.getAll('preadmissions', { select: 'status, created_at' }), // updated_at doesn't exist
       supabaseClient.getAll('customers', { select: 'id' })
     ]);
 
@@ -32,7 +32,7 @@ async function handler(req, res) {
       const inventory = inventoryResult.value.data;
       activeLots = inventory.length;
       totalInventoryValue = inventory.reduce((sum, lot) => 
-        sum + (parseFloat(lot.estimated_value || 0) * parseInt(lot.quantity || 0)), 0
+        sum + parseFloat(lot.total_value || 0), 0  // Use total_value directly instead of calculating
       );
     }
 
@@ -42,12 +42,12 @@ async function handler(req, res) {
       const preadmissions = preadmissionsResult.value.data;
       pendingPreadmissions = preadmissions.filter(p => p.status === 'pending').length;
       
-      // Count completed today
+      // Count completed today (use created_at since updated_at doesn't exist)
       const today = new Date().toISOString().split('T')[0];
       completedToday = preadmissions.filter(p => 
         p.status === 'completed' && 
-        p.updated_at && 
-        p.updated_at.startsWith(today)
+        p.created_at && 
+        p.created_at.startsWith(today)
       ).length;
     }
 

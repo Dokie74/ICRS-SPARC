@@ -131,10 +131,10 @@ class InventoryService extends EnhancedBaseService {
       const enrichedData = {
         ...data,
         current_quantity: currentQuantity,
-        // Use quantity as original_quantity if admission_date exists, otherwise use currentQuantity
-        original_quantity: data.quantity || currentQuantity,
-        // Use created_at as admission_date if no specific admission_date exists
-        admission_date: data.admission_date || data.created_at,
+        // Use quantity as the base quantity 
+        base_quantity: data.quantity || currentQuantity,
+        // Use created_at as the creation date
+        admission_date: data.created_at,
         locations: data.storage_locations ? [{
           location_name: data.storage_locations.location_code,
           description: data.storage_locations.description,
@@ -166,7 +166,7 @@ class InventoryService extends EnhancedBaseService {
       'createLot',
       async () => {
         // Enhanced validation with detailed error reporting
-        const validation = this.validateRequiredEnhanced(lotData, ['part_id', 'customer_id', 'original_quantity']);
+        const validation = this.validateRequiredEnhanced(lotData, ['part_id', 'customer_id', 'quantity']);
         if (!validation.success) {
           throw new Error(validation.error);
         }
@@ -174,8 +174,8 @@ class InventoryService extends EnhancedBaseService {
         // Business rule validation
         await this.validateBusinessRules(lotData, [
           {
-            field: 'original_quantity',
-            validator: (data) => parseInt(data.original_quantity) > 0,
+            field: 'quantity',
+            validator: (data) => parseInt(data.quantity) > 0,
             message: 'Quantity must be greater than zero'
           },
           {
@@ -205,18 +205,9 @@ class InventoryService extends EnhancedBaseService {
           customer_id: lotData.customer_id,
           storage_location_id: lotData.storage_location_id,
           status: lotData.status || 'In Stock',
-          original_quantity: parseInt(lotData.original_quantity),
-          current_quantity: parseInt(lotData.original_quantity),
-          admission_date: lotData.admission_date || new Date().toISOString(),
-          manifest_number: lotData.manifest_number,
-          e214_admission_number: lotData.e214_admission_number,
-          conveyance_name: lotData.conveyance_name,
-          import_date: lotData.import_date,
-          port_of_unlading: lotData.port_of_unlading,
-          bill_of_lading: lotData.bill_of_lading,
+          quantity: parseInt(lotData.quantity),
           total_value: parseFloat(lotData.total_value) || 0,
-          total_charges: parseFloat(lotData.total_charges) || 0,
-          created_at: new Date().toISOString(),
+          unit_value: parseFloat(lotData.unit_value) || 0,
           created_by: options.userId
         };
 
@@ -233,8 +224,8 @@ class InventoryService extends EnhancedBaseService {
         await this.addTransactionRecord(
           lotNumber, 
           'Admission', 
-          lotRecord.original_quantity, 
-          lotData.manifest_number || 'Initial Admission', 
+          lotRecord.quantity, 
+          'Initial Admission', 
           options
         );
 
@@ -243,8 +234,7 @@ class InventoryService extends EnhancedBaseService {
           lot_id: lotNumber,
           part_id: lotData.part_id,
           customer_id: lotData.customer_id,
-          quantity: lotRecord.original_quantity,
-          manifest_number: lotData.manifest_number
+          quantity: lotRecord.quantity
         }, options);
 
         // Emit real-time event for live updates
@@ -258,7 +248,7 @@ class InventoryService extends EnhancedBaseService {
         this.recordMetric('inventory_lot_created', 1, {
           customer_id: lotData.customer_id,
           part_id: lotData.part_id,
-          quantity: lotRecord.original_quantity
+          quantity: lotRecord.quantity
         });
 
         return createdLot;
@@ -307,9 +297,8 @@ class InventoryService extends EnhancedBaseService {
 
         // Update lot quantity with optimistic locking check
         const updateResult = await DatabaseService.update('inventory_lots', lotId, {
-          current_quantity: newQuantity,
-          updated_at: new Date().toISOString(),
-          updated_by: options.userId
+          quantity: newQuantity,
+          updated_at: new Date().toISOString()
         }, options);
 
         if (!updateResult.success) {
@@ -418,8 +407,8 @@ class InventoryService extends EnhancedBaseService {
     try {
       // Update lot to voided status
       const updateResult = await DatabaseService.update('inventory_lots', lotId, {
-        voided: true,
-        current_quantity: 0
+        status: 'Voided',
+        quantity: 0
       }, options);
 
       if (!updateResult.success) {
@@ -447,7 +436,7 @@ class InventoryService extends EnhancedBaseService {
     try {
       const result = await DatabaseService.insert('inventory_locations', [{
         lot_id: lotId,
-        location_name: locationName,
+        location_id: locationName, // Should be location_id (integer), not location_name
         quantity: quantity
       }], options);
 
@@ -519,8 +508,8 @@ class InventoryService extends EnhancedBaseService {
   async getLowStockItems(threshold = 10, options = {}) {
     try {
       const result = await DatabaseService.getAll('inventory_lots', {
-        select: 'id, part_id, customer_id, current_quantity, status',
-        filters: [{ column: 'current_quantity', operator: 'lte', value: threshold }],
+        select: 'id, part_id, customer_id, quantity, status',
+        filters: [{ column: 'quantity', operator: 'lte', value: threshold }],
         ...options
       });
 
@@ -680,6 +669,317 @@ class InventoryService extends EnhancedBaseService {
    */
   subscribeToTransactionChanges(callback, options = {}) {
     return DatabaseService.subscribe('transactions', callback, options);
+  }
+
+  // ========================================
+  // DISTRIBUTED STORAGE FUNCTIONALITY
+  // ========================================
+
+  /**
+   * Place inventory at specific location
+   * Supports distributed storage - one lot across multiple locations
+   */
+  async placeInventoryAtLocation(lotId, locationId, quantity, notes = null, options = {}) {
+    return this.executeWithErrorHandling(
+      'placeInventoryAtLocation',
+      async () => {
+        // Validate inputs
+        const validation = this.validateRequiredEnhanced({ lotId, locationId, quantity }, ['lotId', 'locationId', 'quantity']);
+        if (!validation.success) {
+          throw new Error(validation.error);
+        }
+
+        if (quantity <= 0) {
+          throw new Error('Quantity must be greater than zero');
+        }
+
+        // Verify lot exists
+        const lotResult = await this.getLotById(lotId);
+        if (!lotResult.success) {
+          throw new Error('Lot not found');
+        }
+
+        // Verify location exists
+        const locationResult = await DatabaseService.getAll('storage_locations', {
+          filters: [{ column: 'id', value: locationId }],
+          single: true
+        });
+
+        if (!locationResult.success || !locationResult.data) {
+          throw new Error('Storage location not found');
+        }
+
+        // Check if lot is already at this location
+        const existingResult = await DatabaseService.getAll('inventory_locations', {
+          filters: [
+            { column: 'lot_id', value: lotId },
+            { column: 'location_id', value: locationId }
+          ],
+          single: true
+        });
+
+        if (existingResult.success && existingResult.data) {
+          // Update existing record
+          const updateResult = await DatabaseService.update('inventory_locations', existingResult.data.id, {
+            quantity: existingResult.data.quantity + quantity,
+            notes: notes,
+            placed_by: options.userId,
+            updated_at: new Date().toISOString()
+          }, options);
+
+          if (!updateResult.success) {
+            throw new Error(updateResult.error);
+          }
+
+          return updateResult.data;
+        } else {
+          // Create new location record
+          const result = await DatabaseService.insert('inventory_locations', [{
+            lot_id: lotId,
+            location_id: parseInt(locationId),
+            quantity: quantity,
+            placed_by: options.userId,
+            notes: notes
+          }], options);
+
+          if (!result.success) {
+            throw new Error(result.error);
+          }
+
+          return result.data[0];
+        }
+      },
+      { lotId, locationId, quantity, notes }
+    );
+  }
+
+  /**
+   * Get all locations for a specific lot
+   * Shows distributed storage locations for one lot
+   */
+  async getLotLocations(lotId, options = {}) {
+    try {
+      const result = await DatabaseService.getAll('inventory_locations', {
+        select: `
+          *,
+          storage_locations:location_id(id, location_code, description, zone, aisle, shelf, bin)
+        `,
+        filters: [{ column: 'lot_id', value: lotId }],
+        orderBy: 'placed_at.desc',
+        ...options
+      });
+
+      if (!result.success) {
+        return result;
+      }
+
+      // Transform data for better frontend consumption
+      const locations = result.data.map(loc => ({
+        ...loc,
+        location_info: loc.storage_locations,
+        location_name: loc.storage_locations?.location_code || 'Unknown Location'
+      }));
+
+      return { success: true, data: locations };
+    } catch (error) {
+      console.error('Error fetching lot locations:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Move inventory between locations
+   * Transfer quantity from one location to another within the same lot
+   */
+  async moveInventoryBetweenLocations(lotId, fromLocationId, toLocationId, quantity, reason, options = {}) {
+    return this.executeWithErrorHandling(
+      'moveInventoryBetweenLocations',
+      async () => {
+        // Validate inputs
+        const validation = this.validateRequiredEnhanced(
+          { lotId, fromLocationId, toLocationId, quantity, reason }, 
+          ['lotId', 'fromLocationId', 'toLocationId', 'quantity', 'reason']
+        );
+        if (!validation.success) {
+          throw new Error(validation.error);
+        }
+
+        if (quantity <= 0) {
+          throw new Error('Quantity must be greater than zero');
+        }
+
+        if (fromLocationId === toLocationId) {
+          throw new Error('Source and destination locations cannot be the same');
+        }
+
+        // Check source location has enough inventory
+        const sourceResult = await DatabaseService.getAll('inventory_locations', {
+          filters: [
+            { column: 'lot_id', value: lotId },
+            { column: 'location_id', value: fromLocationId }
+          ],
+          single: true
+        });
+
+        if (!sourceResult.success || !sourceResult.data) {
+          throw new Error('No inventory found at source location');
+        }
+
+        if (sourceResult.data.quantity < quantity) {
+          throw new Error(`Insufficient quantity at source location. Available: ${sourceResult.data.quantity}`);
+        }
+
+        // Reduce quantity at source location
+        const newSourceQuantity = sourceResult.data.quantity - quantity;
+        if (newSourceQuantity === 0) {
+          // Remove record if no quantity remains
+          await DatabaseService.delete('inventory_locations', sourceResult.data.id, options);
+        } else {
+          // Update source location
+          await DatabaseService.update('inventory_locations', sourceResult.data.id, {
+            quantity: newSourceQuantity,
+            updated_at: new Date().toISOString()
+          }, options);
+        }
+
+        // Add quantity to destination location
+        await this.placeInventoryAtLocation(
+          lotId, 
+          toLocationId, 
+          quantity, 
+          `Moved from location ${fromLocationId}: ${reason}`, 
+          options
+        );
+
+        // Add audit log
+        await this.addAuditLog('Inventory Location Transfer', reason, {
+          lot_id: lotId,
+          from_location_id: fromLocationId,
+          to_location_id: toLocationId,
+          quantity: quantity,
+          moved_by: options.userId
+        }, options);
+
+        // Emit event for real-time updates
+        this.emitEvent('inventory.location.transferred', {
+          lot_id: lotId,
+          from_location_id: fromLocationId,
+          to_location_id: toLocationId,
+          quantity: quantity,
+          reason: reason,
+          moved_by: options.userId
+        });
+
+        return { success: true, message: 'Inventory moved successfully' };
+      },
+      { lotId, fromLocationId, toLocationId, quantity, reason }
+    );
+  }
+
+  /**
+   * Get all inventory at a specific location
+   * Shows all lots stored at one physical location
+   */
+  async getInventoryAtLocation(locationId, options = {}) {
+    try {
+      const result = await DatabaseService.getAll('inventory_locations', {
+        select: `
+          *,
+          inventory_lots:lot_id(
+            id,
+            part_id,
+            customer_id,
+            status,
+            created_at,
+            parts:part_id(id, description, material),
+            customers(id, name)
+          )
+        `,
+        filters: [{ column: 'location_id', value: locationId }],
+        orderBy: 'placed_at.desc',
+        ...options
+      });
+
+      if (!result.success) {
+        return result;
+      }
+
+      // Transform data for better frontend consumption
+      const inventory = result.data.map(item => ({
+        lot_id: item.lot_id,
+        quantity: item.quantity,
+        placed_at: item.placed_at,
+        placed_by: item.placed_by,
+        notes: item.notes,
+        lot_info: item.inventory_lots,
+        part_description: item.inventory_lots?.parts?.description || 'Unknown Part',
+        customer_name: item.inventory_lots?.customers?.name || 'Unknown Customer'
+      }));
+
+      return { success: true, data: inventory };
+    } catch (error) {
+      console.error('Error fetching inventory at location:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Get inventory summary by locations
+   * Overview of inventory distribution across all locations
+   */
+  async getInventoryLocationSummary(options = {}) {
+    try {
+      const result = await DatabaseService.rpc('get_inventory_location_summary', {}, options);
+      return result;
+    } catch (error) {
+      console.error('Error fetching inventory location summary:', error);
+      // Fallback to manual calculation if RPC doesn't exist
+      return this.calculateInventoryLocationSummary(options);
+    }
+  }
+
+  /**
+   * Fallback method to calculate location summary manually
+   * Used if the RPC function doesn't exist yet
+   */
+  async calculateInventoryLocationSummary(options = {}) {
+    try {
+      const result = await DatabaseService.getAll('inventory_locations', {
+        select: `
+          location_id,
+          quantity,
+          storage_locations:location_id(location_code, description, zone)
+        `,
+        ...options
+      });
+
+      if (!result.success) {
+        return result;
+      }
+
+      // Group by location and calculate totals
+      const locationSummary = {};
+      result.data.forEach(item => {
+        const locationKey = item.location_id;
+        if (!locationSummary[locationKey]) {
+          locationSummary[locationKey] = {
+            location_id: locationKey,
+            location_code: item.storage_locations?.location_code || 'Unknown',
+            description: item.storage_locations?.description || '',
+            zone: item.storage_locations?.zone || '',
+            total_quantity: 0,
+            lot_count: 0
+          };
+        }
+        locationSummary[locationKey].total_quantity += item.quantity;
+        locationSummary[locationKey].lot_count += 1;
+      });
+
+      return { success: true, data: Object.values(locationSummary) };
+    } catch (error) {
+      console.error('Error calculating inventory location summary:', error);
+      return { success: false, error: error.message };
+    }
   }
 }
 

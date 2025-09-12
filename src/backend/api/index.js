@@ -28,7 +28,7 @@ const materialsRoutes = require('./routes/materials');
 const locationsRoutes = require('./routes/locations');
 const adminRoutes = require('./routes/admin');
 // const demoRoutes = require('./routes/demo'); // Removed as per Fix Plan
-const htsHandler = require('../../../api/hts/index.js');
+const htsRoutes = require('./routes/hts');
 const materialPricingRoutes = require('./routes/material-pricing');
 const tariffRoutes = require('./routes/tariff');
 
@@ -212,7 +212,7 @@ app.use('/api/dashboard', authMiddleware, dashboardRoutes);
 app.use('/api/admin', authMiddleware, adminRoutes);
 app.use('/api/materials', authMiddleware, materialsRoutes);
 app.use('/api/locations', authMiddleware, locationsRoutes);
-app.use('/api/hts', htsHandler);
+app.use('/api/hts', authMiddleware, htsRoutes);
 app.use('/api/material-pricing', authMiddleware, materialPricingRoutes);
 app.use('/api/tariff', authMiddleware, tariffRoutes);
 

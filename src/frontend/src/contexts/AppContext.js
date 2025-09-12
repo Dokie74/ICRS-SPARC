@@ -263,7 +263,7 @@ export const AppProvider = ({ children }) => {
     dispatch({ type: APP_ACTIONS.SET_LOADING, payload: { key: 'customers', value: true } });
     
     try {
-      const result = await apiClient.customers.getAll({ limit: 1000, active: true });
+      const result = await apiClient.customers.getAll({ limit: 1000 });
       if (result.success) {
         dispatch({ type: APP_ACTIONS.SET_CUSTOMERS, payload: result.data });
       }
@@ -283,7 +283,7 @@ export const AppProvider = ({ children }) => {
     dispatch({ type: APP_ACTIONS.SET_LOADING, payload: { key: 'parts', value: true } });
     
     try {
-      const result = await apiClient.parts.getAll({ limit: 1000, active: true });
+      const result = await apiClient.parts.getAll({ limit: 1000 });
       if (result.success) {
         dispatch({ type: APP_ACTIONS.SET_PARTS, payload: result.data });
       }
@@ -303,7 +303,7 @@ export const AppProvider = ({ children }) => {
     dispatch({ type: APP_ACTIONS.SET_LOADING, payload: { key: 'locations', value: true } });
     
     try {
-      const result = await apiClient.get('/locations', { limit: 1000, active: true });
+      const result = await apiClient.get('/locations', { limit: 1000, is_active: true });
       if (result.success) {
         dispatch({ type: APP_ACTIONS.SET_LOCATIONS, payload: result.data });
       }

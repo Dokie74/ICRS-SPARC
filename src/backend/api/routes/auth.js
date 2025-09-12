@@ -419,4 +419,98 @@ router.post('/reactivate-user/:userId', authMiddleware, asyncHandler(async (req,
   res.json(result);
 }));
 
+/**
+ * Register new user
+ * POST /api/auth/register
+ */
+router.post('/register', asyncHandler(async (req, res) => {
+  const { email, password, name, role = 'user' } = req.body;
+
+  // Basic validation
+  if (!email || !password || !name) {
+    return res.status(400).json({
+      success: false,
+      error: 'Email, password, and name are required'
+    });
+  }
+
+  try {
+    const result = await authService.register({
+      email,
+      password,
+      name,
+      role
+    });
+
+    res.status(201).json(result);
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(400).json({
+      success: false,
+      error: error.message || 'Registration failed'
+    });
+  }
+}));
+
+/**
+ * Get current user profile
+ * GET /api/auth/profile
+ */
+router.get('/profile', authMiddleware, asyncHandler(async (req, res) => {
+  try {
+    const result = await authService.getProfile(req.user?.id, {
+      accessToken: req.accessToken
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('Get profile error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch profile'
+    });
+  }
+}));
+
+/**
+ * Update user profile
+ * PUT /api/auth/profile
+ */
+router.put('/profile', authMiddleware, asyncHandler(async (req, res) => {
+  try {
+    const result = await authService.updateProfile(req.user?.id, req.body, {
+      accessToken: req.accessToken,
+      userId: req.user?.id
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(400).json({
+      success: false,
+      error: error.message || 'Failed to update profile'
+    });
+  }
+}));
+
+/**
+ * Get user permissions
+ * GET /api/auth/permissions
+ */
+router.get('/permissions', authMiddleware, asyncHandler(async (req, res) => {
+  try {
+    const result = await authService.getUserPermissions(req.user?.id, {
+      accessToken: req.accessToken
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('Get permissions error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch permissions'
+    });
+  }
+}));
+
 module.exports = router;

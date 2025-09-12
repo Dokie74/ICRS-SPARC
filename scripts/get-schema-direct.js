@@ -18,9 +18,16 @@ async function getTableSchema(tableName) {
   `;
 
   try {
-    const { data, error } = await supabase.rpc('exec_sql', {
-      sql: query
-    });
+    // Note: exec_sql RPC function doesn't exist in Supabase by default
+    console.log('⚠️  exec_sql RPC function does not exist in Supabase by default');
+    console.log('   Trying information_schema query via standard client...');
+    
+    const { data, error } = await supabase
+      .from('information_schema.columns')
+      .select('column_name, data_type, is_nullable, column_default, character_maximum_length')
+      .eq('table_name', tableName)
+      .eq('table_schema', 'public')
+      .order('ordinal_position');
 
     if (error) {
       console.error('Error:', error.message);

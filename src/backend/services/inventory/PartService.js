@@ -316,7 +316,7 @@ class PartService extends BaseService {
       // Get all lots for this part
       const lotsResult = await DatabaseService.getAll('inventory_lots', {
         filters: [{ column: 'part_id', value: partId }],
-        select: 'id, status, original_quantity, current_quantity, admission_date, customer_id',
+        select: 'id, status, quantity, customer_id, created_at',
         ...options
       });
 
@@ -327,9 +327,9 @@ class PartService extends BaseService {
       const lots = lotsResult.data;
       const stats = {
         total_lots: lots.length,
-        total_admitted: lots.reduce((sum, lot) => sum + lot.original_quantity, 0),
-        current_stock: lots.reduce((sum, lot) => sum + lot.current_quantity, 0),
-        total_processed: lots.reduce((sum, lot) => sum + (lot.original_quantity - lot.current_quantity), 0),
+        total_admitted: lots.reduce((sum, lot) => sum + lot.quantity, 0),
+        current_stock: lots.reduce((sum, lot) => sum + lot.quantity, 0),
+        total_processed: 0, // Processed quantity tracking needs separate implementation
         customer_count: new Set(lots.map(lot => lot.customer_id)).size,
         status_breakdown: {},
         monthly_admissions: {}
@@ -343,11 +343,11 @@ class PartService extends BaseService {
       // Monthly admissions (last 12 months)
       const now = new Date();
       lots.forEach(lot => {
-        const admissionDate = new Date(lot.admission_date);
+        const admissionDate = new Date(lot.created_at);
         const monthsAgo = Math.floor((now - admissionDate) / (1000 * 60 * 60 * 24 * 30));
         if (monthsAgo < 12) {
           const monthKey = admissionDate.toISOString().substring(0, 7); // YYYY-MM
-          stats.monthly_admissions[monthKey] = (stats.monthly_admissions[monthKey] || 0) + lot.original_quantity;
+          stats.monthly_admissions[monthKey] = (stats.monthly_admissions[monthKey] || 0) + lot.quantity;
         }
       });
 

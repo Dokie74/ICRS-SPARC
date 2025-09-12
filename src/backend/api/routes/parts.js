@@ -298,6 +298,54 @@ router.get('/reference/materials', asyncHandler(async (req, res) => {
 }));
 
 /**
+ * GET /api/parts/search
+ * Search parts by query parameter
+ */
+router.get('/search', asyncHandler(async (req, res) => {
+  const { q: query, limit = 50, offset = 0, material } = req.query;
+
+  if (!query || query.trim().length === 0) {
+    return res.status(400).json({
+      success: false,
+      error: 'Search query (q) parameter is required'
+    });
+  }
+
+  try {
+    const filters = [];
+    
+    // Add material filter if provided
+    if (material) {
+      filters.push({ column: 'material', value: material });
+    }
+
+    // Search in multiple fields
+    const searchQuery = `%${query.trim()}%`;
+    filters.push({
+      column: 'description',
+      value: searchQuery,
+      operator: 'ilike'
+    });
+
+    const result = await supabaseClient.getAll('parts', {
+      filters,
+      orderBy: { column: 'description', ascending: true },
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      accessToken: req.accessToken
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('Search parts error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to search parts'
+    });
+  }
+}));
+
+/**
  * GET /api/parts/:id/inventory
  * Get inventory lots for specific part
  */

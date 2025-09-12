@@ -26,6 +26,7 @@ import PreShipments from './components/pages/PreShipments';
 import Shipping from './components/pages/Shipping';
 import Receiving from './components/pages/Receiving';
 import Parts from './components/pages/Parts';
+import Customers from './components/pages/Customers';
 import Reports from './components/pages/Reports';
 import Admin from './components/pages/Admin';
 import HTSBrowser from './components/pages/HTSBrowser';
@@ -229,6 +230,14 @@ const App = () => {
                     } 
                   />
                   
+                  <Route 
+                    path="/customers" 
+                    element={
+                      <ProtectedRoute>
+                        <Customers />
+                      </ProtectedRoute>
+                    } 
+                  />
                   
                   <Route 
                     path="/hts-browser" 

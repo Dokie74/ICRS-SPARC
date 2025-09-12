@@ -10,10 +10,10 @@ const CreatePreshipmentModal = ({ isOpen, onClose }) => {
 
   // Simple form state - matching original icrs-app structure
   const [formData, setFormData] = useState({
-    shipmentId: '',
+    shipment_id: '',
     type: '7501 Consumption Entry',
-    customerId: '',
-    entryNumber: '',
+    customer_id: '',
+    entry_number: '',
     items: [{ lot: '', qty: '' }],
     
     // ACE Entry Summary Fields

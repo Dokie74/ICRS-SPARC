@@ -16,7 +16,7 @@ async function handler(req, res) {
       const { status, limit, offset } = req.query;
       
       let options = {
-        select: 'id, lot_number, part_number, part_description, quantity, estimated_value, status, location_id, created_at',
+        select: 'id, quantity, total_value, status, storage_location_id, created_at, customer_id, part_id, unit_value, updated_at',
         limit: limit ? parseInt(limit) : 50,
         offset: offset ? parseInt(offset) : 0
       };
