@@ -282,12 +282,12 @@ class ValidationUtils {
   validatePreadmission(preadmissionData) {
     const errors = {};
 
-    if (!this.isRequired(preadmissionData.admissionId)) {
-      errors.admissionId = 'Admission ID is required';
+    if (!this.isRequired(preadmissionData.admission_id)) {
+      errors.admission_id = 'Admission ID is required';
     }
 
-    if (!this.isRequired(preadmissionData.customerId)) {
-      errors.customerId = 'Customer is required';
+    if (!this.isRequired(preadmissionData.customer_id)) {
+      errors.customer_id = 'Customer is required';
     }
 
     if (!this.isRequired(preadmissionData.items) || !Array.isArray(preadmissionData.items) || preadmissionData.items.length === 0) {
@@ -295,16 +295,16 @@ class ValidationUtils {
     }
 
     // Container validation - FTZ container tracking
-    if (preadmissionData.container && !this.isValidContainerNumber(preadmissionData.container)) {
-      errors.container = 'Invalid container number format';
+    if (preadmissionData.container_number && !this.isValidContainerNumber(preadmissionData.container_number)) {
+      errors.container_number = 'Invalid container number format';
     }
 
     if (preadmissionData.bol && !this.isValidBOLNumber(preadmissionData.bol)) {
       errors.bol = 'Invalid Bill of Lading number';
     }
 
-    if (preadmissionData.arrivalDate && !this.isValidDate(preadmissionData.arrivalDate)) {
-      errors.arrivalDate = 'Invalid arrival date';
+    if (preadmissionData.arrival_date && !this.isValidDate(preadmissionData.arrival_date)) {
+      errors.arrival_date = 'Invalid arrival date';
     }
 
     return {

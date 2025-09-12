@@ -403,11 +403,12 @@ class ReceivingService extends BaseService {
       console.warn('ftz_compliance table not found - compliance record not stored');
       const complianceResult = { success: true, data: [{ id: `temp-${Date.now()}` }] };
 
-      // Update preadmission with compliance status
+      // Note: FTZ compliance columns (ftz_compliance_status, ftz_compliance_score, compliance_verified_at) 
+      // do not exist in preadmissions table schema - compliance data would be stored elsewhere
+      // Update preadmission with available columns only
       await DatabaseService.update('preadmissions', preadmission.id, {
-        ftz_compliance_status: complianceRecord.compliance_status,
-        ftz_compliance_score: complianceScore,
-        compliance_verified_at: new Date().toISOString()
+        // Note: Compliance status would need to be stored in 'status' or a JSON field
+        status: 'compliance_verified'
       }, options);
 
       return {
@@ -574,9 +575,11 @@ class ReceivingService extends BaseService {
         }
         
         // Compliance rate calculation
-        if (r.ftz_compliance_status) {
+        // Note: ftz_compliance_status column does not exist in preadmissions table
+        // Compliance would be tracked through 'status' field or JSON data
+        if (r.status === 'compliance_verified' || r.zone_status === 'compliant') {
           totalWithCompliance += 1;
-          if (r.ftz_compliance_status === 'Compliant') {
+          if (r.zone_status === 'compliant') {
             compliantCount += 1;
           }
         }

@@ -400,13 +400,13 @@ class ShippingService extends BaseService {
             last_shipped_at: new Date().toISOString()
           });
 
-          // Create transaction record
+          // Create transaction record (using actual schema fields)
           transactionRecords.push({
             lot_id: item.lot_id,
             type: 'Shipment',
-            quantity_change: -item.quantity,
-            resulting_quantity: newQuantity,
-            created_at: new Date().toISOString(),
+            quantity: -item.quantity, // Use 'quantity' column (not quantity_change)  
+            // Note: resulting_quantity column doesn't exist in schema
+            notes: `Shipment quantity: ${item.quantity}, resulting: ${newQuantity}`,
             created_by: options.userId
           });
         }
@@ -527,7 +527,8 @@ class ShippingService extends BaseService {
         changed_by: options.userId
       };
 
-      await DatabaseService.insert('preshipment_audit', [auditRecord], options);
+      // Note: preshipment_audit table not yet implemented
+      console.warn('Staging audit record not created - table preshipment_audit does not exist. Data would be:', auditRecord);
     } catch (error) {
       console.error('Error creating staging audit record:', error);
     }
@@ -544,7 +545,8 @@ class ShippingService extends BaseService {
         completed_by: options.userId
       };
 
-      await DatabaseService.insert('shipment_completions', [completionRecord], options);
+      // Note: shipment_completions table not yet implemented  
+      console.warn('Shipment completion record not created - table shipment_completions does not exist. Data would be:', completionRecord);
     } catch (error) {
       console.error('Error creating shipment completion record:', error);
     }

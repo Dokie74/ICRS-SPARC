@@ -467,8 +467,8 @@ class InventoryService extends EnhancedBaseService {
       const result = await DatabaseService.insert('transactions', [{
         lot_id: lotId,
         type: type,
-        quantity_change: quantityChange,
-        source_document_number: sourceDocument
+        quantity: quantityChange, // Use 'quantity' column (not quantity_change)
+        reference_id: sourceDocument // Use 'reference_id' column (not source_document_number)
       }], options);
 
       return result;

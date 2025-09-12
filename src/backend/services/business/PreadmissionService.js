@@ -578,7 +578,7 @@ class PreadmissionService extends BaseService {
           preadmission.admission_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
           preadmission.e214?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           preadmission.bol?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          preadmission.container?.toLowerCase().includes(searchTerm.toLowerCase())
+          preadmission.container_number?.toLowerCase().includes(searchTerm.toLowerCase())
         );
         
         return { success: true, data: filteredData };
