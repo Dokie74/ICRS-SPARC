@@ -210,7 +210,7 @@ class ApiClient {
     login: async (email, password) => {
       const result = await this.post('/auth/login', { email, password });
       if (result.success && result.data) {
-        this.setToken(result.data.access_token);
+        this.setToken(result.data.session.access_token);
         this.setUser(result.data.user);
       }
       return result;
@@ -232,7 +232,7 @@ class ApiClient {
     refresh: async () => {
       const result = await this.post('/auth/refresh');
       if (result.success && result.data) {
-        this.setToken(result.data.access_token);
+        this.setToken(result.data.session.access_token);
         this.setUser(result.data.user);
       }
       return result;
