@@ -14,6 +14,7 @@ const locationsHandler = require('./_handlers/locations');
 const materialsHandler = require('./_handlers/materials');
 const partsHandler = require('./_handlers/parts');
 const suppliersHandler = require('./_handlers/suppliers');
+const envCheckHandler = require('./_handlers/env-check');
 
 async function handler(req, res) {
   // Handle CORS for all routes
@@ -60,6 +61,8 @@ async function handler(req, res) {
       return await partsHandler(req, res);
     } else if (path.startsWith('/suppliers')) {
       return await suppliersHandler(req, res);
+    } else if (path === '/env-check') {
+      return await envCheckHandler(req, res);
     } else if (path === '' || path === '/') {
       // API documentation endpoint
       res.json({
@@ -82,7 +85,8 @@ async function handler(req, res) {
             '/api/locations',
             '/api/materials',
             '/api/parts',
-            '/api/suppliers'
+            '/api/suppliers',
+            '/api/env-check'
           ]
         }
       });
