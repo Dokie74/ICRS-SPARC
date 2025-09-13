@@ -7,37 +7,32 @@ module.exports = async function handler(req, res) {
   setCorsHeaders(res, req.headers.origin);
   if (handleOptions(req, res)) return;
 
-  // Create Supabase client with SERVICE ROLE key for authentication operations
+  // Create Supabase client with ANON_KEY for user authentication
+  // SERVICE_KEY should only be used for admin operations, not user login
   const supabase = createClient(
     process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY
+    process.env.SUPABASE_ANON_KEY
   );
 
   // Check environment variables
-  if (!process.env.SUPABASE_URL || (!process.env.SUPABASE_SERVICE_KEY && !process.env.SUPABASE_ANON_KEY)) {
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
     console.error('Missing Supabase environment variables:', {
       url: !!process.env.SUPABASE_URL,
-      service_key: !!process.env.SUPABASE_SERVICE_KEY,
       anon_key: !!process.env.SUPABASE_ANON_KEY
     });
     return res.status(500).json({
       success: false,
-      error: 'Authentication service misconfigured',
-      debug: {
-        supabase_url: !!process.env.SUPABASE_URL,
-        supabase_service_key: !!process.env.SUPABASE_SERVICE_KEY,
-        supabase_anon_key: !!process.env.SUPABASE_ANON_KEY,
-        using_service_key: !!process.env.SUPABASE_SERVICE_KEY
-      }
+      error: 'Authentication service misconfigured'
     });
   }
 
-  // Log Supabase configuration for debugging (first few chars only)
-  console.log('Supabase config:', {
-    url: process.env.SUPABASE_URL?.substring(0, 30) + '...',
-    using_service_key: !!process.env.SUPABASE_SERVICE_KEY,
-    key_preview: (process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY)?.substring(0, 20) + '...'
-  });
+  // Log basic configuration in development only
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Supabase config:', {
+      url: process.env.SUPABASE_URL?.substring(0, 30) + '...',
+      using_anon_key: !!process.env.SUPABASE_ANON_KEY
+    });
+  }
 
   if (req.method !== 'POST') {
     return res.status(405).json({

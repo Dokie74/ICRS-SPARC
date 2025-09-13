@@ -4,7 +4,8 @@
 
 class ApiClient {
   constructor() {
-    this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+    // Intelligent API URL detection for different environments
+    this.baseURL = this.getBaseURL();
     this.token = null;
     this.user = null;
     
@@ -35,44 +36,80 @@ class ApiClient {
     );
   }
 
-  // Set authentication token
-  setToken(token) {
+  // Intelligent API URL detection for different environments
+  getBaseURL() {
+    // If explicitly set via environment variable, use it
+    if (process.env.REACT_APP_API_URL) {
+      return process.env.REACT_APP_API_URL;
+    }
+
+    // For production/deployment, use relative API path
+    if (process.env.NODE_ENV === 'production' || window.location.hostname !== 'localhost') {
+      return '/api';
+    }
+
+    // For local development, use localhost backend
+    return 'http://localhost:5001';
+  }
+
+  // Set authentication token with secure storage
+  setToken(token, persistent = false) {
     this.token = token;
     if (token) {
-      localStorage.setItem('icrs_auth_token', token);
+      if (persistent) {
+        // Only use localStorage if user explicitly wants to stay logged in
+        localStorage.setItem('icrs_auth_token', token);
+        sessionStorage.removeItem('icrs_auth_token');
+      } else {
+        // Default to sessionStorage for better security
+        sessionStorage.setItem('icrs_auth_token', token);
+        localStorage.removeItem('icrs_auth_token');
+      }
     } else {
+      // Clear both storage types
       localStorage.removeItem('icrs_auth_token');
+      sessionStorage.removeItem('icrs_auth_token');
     }
   }
 
-  // Set current user
-  setUser(user) {
+  // Set current user with secure storage
+  setUser(user, persistent = false) {
     this.user = user;
     if (user) {
-      localStorage.setItem('icrs_user', JSON.stringify(user));
+      const userData = JSON.stringify(user);
+      if (persistent) {
+        localStorage.setItem('icrs_user', userData);
+        sessionStorage.removeItem('icrs_user');
+      } else {
+        sessionStorage.setItem('icrs_user', userData);
+        localStorage.removeItem('icrs_user');
+      }
     } else {
       localStorage.removeItem('icrs_user');
+      sessionStorage.removeItem('icrs_user');
     }
   }
 
-  // Get current user
+  // Get current user from secure storage
   getCurrentUser() {
     if (!this.user) {
-      const storedUser = localStorage.getItem('icrs_user');
+      // Try sessionStorage first, then localStorage as fallback
+      let storedUser = sessionStorage.getItem('icrs_user') || localStorage.getItem('icrs_user');
       this.user = storedUser ? JSON.parse(storedUser) : null;
     }
     return this.user;
   }
 
-  // Initialize from localStorage
+  // Initialize from secure storage
   initialize() {
-    const token = localStorage.getItem('icrs_auth_token');
-    const user = localStorage.getItem('icrs_user');
-    
+    // Try sessionStorage first, then localStorage as fallback
+    const token = sessionStorage.getItem('icrs_auth_token') || localStorage.getItem('icrs_auth_token');
+    const user = sessionStorage.getItem('icrs_user') || localStorage.getItem('icrs_user');
+
     if (token) {
       this.token = token;
     }
-    
+
     if (user) {
       this.user = JSON.parse(user);
     }

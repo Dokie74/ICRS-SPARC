@@ -2,6 +2,14 @@
 const { setCorsHeaders, handleOptions } = require('../_utils/cors');
 
 module.exports = async function handler(req, res) {
+  // Disable environment check endpoint in production for security
+  if (process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production') {
+    return res.status(404).json({
+      success: false,
+      error: 'Not found'
+    });
+  }
+
   // Handle CORS
   setCorsHeaders(res, req.headers.origin);
   if (handleOptions(req, res)) return;
