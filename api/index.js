@@ -16,6 +16,7 @@ const partsHandler = require('./_handlers/parts');
 const suppliersHandler = require('./_handlers/suppliers');
 const envCheckHandler = require('./_handlers/env-check');
 const authTestHandler = require('./_handlers/auth-test');
+const authDebugHandler = require('./_handlers/auth-debug');
 
 async function handler(req, res) {
   // Handle CORS for all routes
@@ -44,6 +45,8 @@ async function handler(req, res) {
       return await authLoginHandler(req, res);
     } else if (path === '/auth/test') {
       return await authTestHandler(req, res);
+    } else if (path === '/auth/debug') {
+      return await authDebugHandler(req, res);
     } else if (path === '/auth/refresh') {
       return await authRefreshHandler(req, res);
     } else if (path.startsWith('/customers')) {
@@ -80,6 +83,7 @@ async function handler(req, res) {
             '/api/admin/employees',
             '/api/auth/login',
             '/api/auth/test',
+            '/api/auth/debug',
             '/api/auth/refresh', 
             '/api/customers',
             '/api/dashboard/stats',
