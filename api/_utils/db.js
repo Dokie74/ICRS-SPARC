@@ -10,7 +10,10 @@ function createSupabaseClient(accessToken = null) {
 
   // If access token is provided, set it for RLS
   if (accessToken) {
-    supabase.auth.session = () => ({ access_token: accessToken });
+    supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: null
+    });
   }
 
   return supabase;
@@ -26,11 +29,21 @@ class SupabaseClient {
   async getAll(table, options = {}, returnCount = false) {
     try {
       let query = this.client.from(table).select(options.select || '*', { count: 'exact' });
-      
+
+      // Handle search functionality
+      if (options.searchTerm && options.searchColumns) {
+        const searchTerm = options.searchTerm;
+        const searchConditions = options.searchColumns.map(col => `${col}.ilike.%${searchTerm}%`).join(',');
+        query = query.or(searchConditions);
+      }
+
       if (options.filters) {
         Object.entries(options.filters).forEach(([key, value]) => {
           if (Array.isArray(value)) {
             query = query.in(key, value);
+          } else if (typeof value === 'string' && value.includes(',') && key === 'or') {
+            // Handle legacy 'or' filter format
+            query = query.or(value);
           } else {
             query = query.eq(key, value);
           }
@@ -44,6 +57,10 @@ class SupabaseClient {
 
       if (options.limit) {
         query = query.limit(options.limit);
+      }
+
+      if (options.offset) {
+        query = query.range(options.offset, options.offset + (options.limit || 50) - 1);
       }
 
       const { data, error, count } = await query;

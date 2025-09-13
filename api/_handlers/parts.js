@@ -23,9 +23,8 @@ async function handler(req, res) {
 
       if (search) {
         // Search by id or description (id serves as part number)
-        options.filters = {
-          or: `id.ilike.%${search}%,description.ilike.%${search}%`
-        };
+        options.searchTerm = search;
+        options.searchColumns = ['id', 'description', 'hts_code', 'manufacturer_id'];
       }
 
       const result = await supabaseClient.getAll('parts', options);
