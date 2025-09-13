@@ -5,16 +5,15 @@ const { createClient } = require('@supabase/supabase-js');
 function createSupabaseClient(accessToken = null) {
   const supabase = createClient(
     process.env.SUPABASE_URL,
-    process.env.SUPABASE_ANON_KEY
+    process.env.SUPABASE_ANON_KEY,
+    {
+      global: {
+        headers: accessToken ? {
+          Authorization: `Bearer ${accessToken}`
+        } : {}
+      }
+    }
   );
-
-  // If access token is provided, set it for RLS
-  if (accessToken) {
-    supabase.auth.setSession({
-      access_token: accessToken,
-      refresh_token: null
-    });
-  }
 
   return supabase;
 }
